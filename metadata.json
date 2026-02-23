@@ -1,5 +1,7 @@
 {
-  "name": "",
-  "description": "",
-  "requestFramePermissions": []
+  "name": "PriceCheck SaaS",
+  "description": "A comprehensive SaaS platform for stores to provide QR-based barcode scanning for customers to check prices instantly, with advanced data management and CRM features.",
+  "requestFramePermissions": [
+    "camera"
+  ]
 }
