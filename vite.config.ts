@@ -7,14 +7,16 @@ export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, '.'),
+      '@': path.resolve(__dirname, './src'),
     },
-  },
-  server: {
-    allowedHosts: true, // Render host hatasını çözer
   },
   build: {
     outDir: 'dist',
+    assetsDir: 'assets',
     emptyOutDir: true,
+    sourcemap: false,
+  },
+  server: {
+    allowedHosts: true,
   }
 });
