@@ -147,12 +147,22 @@ async function startServer() {
   // Diğer API'ler (Admin, Store vb.)
   // ... (PostgreSQL uyumlu tüm fonksiyonlar buraya gelecek)
 
+  // --- VITE / STATIC SERVING ---
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => res.sendFile(path.join(__dirname, "dist", "index.html")));
+    // Üretim modunda dist klasörünü servis et
+    const distPath = path.join(__dirname, "dist");
+    app.use(express.static(distPath));
+    
+    // Tüm istekleri dist içindeki index.html'e yönlendir (SPA desteği)
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(distPath, "index.html"));
+    });
   }
 
   app.listen(PORT, "0.0.0.0", async () => {
