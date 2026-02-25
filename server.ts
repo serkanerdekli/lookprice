@@ -1,5 +1,5 @@
 import dns from "node:dns";
-dns.setDefaultResultOrder("ipv4first");
+dns.setDefaultResultOrder("ipv4first"); // Supabase IPv6 sorununu çözer
 
 import express from "express";
 import { createServer as createViteServer } from "vite";
@@ -16,23 +16,28 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = process.env.JWT_SECRET || "lookprice_secret_key";
-
-// Veritabanı Bağlantısı
-const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
-  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
-});
-
-// Statik Dosya Yolu (BEYAZ SAYFA ÇÖZÜMÜ)
 const rootDir = process.cwd();
 const distPath = path.join(rootDir, "dist");
 
 app.use(express.json());
 
-// --- API Rotaları (En Üstte Olmalı) ---
-app.get("/api/health", (req, res) => res.json({ status: "ok", mode: process.env.NODE_ENV }));
+// --- VERİTABANI BAĞLANTISI ---
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === "production" ? { rejectUnauthorized: false } : false
+});
 
+// --- HATA AYIKLAMA ROTASI (Sorun olursa buraya bakacağız) ---
+app.get("/api/debug", (req, res) => {
+  res.json({
+    env: process.env.NODE_ENV,
+    distPath: distPath,
+    distExists: fs.existsSync(distPath),
+    filesInDist: fs.existsSync(distPath) ? fs.readdirSync(distPath) : []
+  });
+});
+
+// --- API ROTALARI ---
 app.get("/api/public/store/:slug", async (req, res) => {
   try {
     const result = await pool.query("SELECT name, logo_url, primary_color, slug FROM stores WHERE slug = $1", [req.params.slug]);
@@ -40,45 +45,44 @@ app.get("/api/public/store/:slug", async (req, res) => {
   } catch (e) { res.status(500).json({ error: e.message }); }
 });
 
-// ... (Diğer API rotalarınız buraya gelebilir)
+app.post("/api/auth/login", async (req, res) => {
+  try {
+    const { email, password } = req.body;
+    const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = userRes.rows[0];
+    if (!user || !bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: "Invalid" });
+    const token = jwt.sign({ id: user.id, role: user.role, store_id: user.store_id }, process.env.JWT_SECRET || "secret");
+    res.json({ token, user: { email: user.email, role: user.role, store_id: user.store_id } });
+  } catch (e) { res.status(500).json({ error: e.message }); }
+});
 
-// --- FRONTEND SERVİSİ (BEYAZ SAYFAYI BİTİREN KISIM) ---
+// --- FRONTEND SERVİSİ (Beyaz Sayfa Çözümü) ---
 if (process.env.NODE_ENV === "production") {
-  // 1. Önce dist klasöründeki gerçek dosyaları (js, css, resim) servis et
+  // 1. Statik dosyaları (js, css) servis et
   app.use(express.static(distPath));
 
-  // 2. Geri kalan tüm istekleri index.html'e yönlendir (React Router için)
+  // 2. Geri kalan her şeyi dist/index.html'e yönlendir
   app.get("*", (req, res) => {
-    // Eğer istek bir API isteği değilse index.html gönder
-    if (!req.path.startsWith('/api')) {
-      const indexPath = path.join(distPath, "index.html");
-      if (fs.existsSync(indexPath)) {
-        res.sendFile(indexPath);
-      } else {
-        res.status(500).send("Hata: dist/index.html bulunamadı! Lütfen build işleminin başarılı olduğundan emin olun.");
-      }
+    if (req.path.startsWith('/api')) return res.status(404).json({error: "API not found"});
+    
+    const indexPath = path.join(distPath, "index.html");
+    if (fs.existsSync(indexPath)) {
+      res.sendFile(indexPath);
+    } else {
+      res.status(500).send("Kritik Hata: dist/index.html bulunamadı! Lütfen build işlemini kontrol edin.");
     }
   });
 } else {
-  // Geliştirme modu (AI Studio için)
   const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
   app.use(vite.middlewares);
 }
 
-async function initDb() {
-  const client = await pool.connect();
-  try {
-    await client.query(`
-      CREATE TABLE IF NOT EXISTS stores (id SERIAL PRIMARY KEY, name TEXT NOT NULL, slug TEXT UNIQUE NOT NULL, logo_url TEXT, primary_color TEXT DEFAULT '#4f46e5', subscription_end DATE, created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP);
-      CREATE TABLE IF NOT EXISTS products (id SERIAL PRIMARY KEY, store_id INTEGER NOT NULL, barcode TEXT NOT NULL, name TEXT NOT NULL, price REAL NOT NULL, currency TEXT DEFAULT 'TRY', description TEXT, UNIQUE(store_id, barcode));
-      CREATE TABLE IF NOT EXISTS users (id SERIAL PRIMARY KEY, store_id INTEGER, email TEXT UNIQUE NOT NULL, password TEXT NOT NULL, role TEXT NOT NULL);
-    `);
-    console.log("✅ Veritabanı tabloları hazır.");
-  } finally { client.release(); }
-}
-
 app.listen(PORT, "0.0.0.0", async () => {
-  console.log(`🚀 Sunucu port ${PORT} üzerinde çalışıyor.`);
-  console.log(`📂 Statik dosyalar şuradan aranıyor: ${distPath}`);
-  try { await initDb(); } catch (e) { console.error("❌ DB Hatası:", e.message); }
+  console.log(`🚀 Sunucu port ${PORT} üzerinde aktif.`);
+  try {
+    const client = await pool.connect();
+    await client.query("SELECT 1");
+    client.release();
+    console.log("✅ Veritabanı bağlantısı başarılı.");
+  } catch (e) { console.error("❌ DB Hatası:", e.message); }
 });
