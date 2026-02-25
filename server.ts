@@ -1,12 +1,7 @@
 import dns from "node:dns";
-// BU SATIR EN ÜSTTE OLMALI - IPv6 yerine IPv4'ü zorlar
+// IPv6 sorununu çözmek için en üstte olmalı
 dns.setDefaultResultOrder("ipv4first");
 
-import express from "express";
-import { createServer as createViteServer } from "vite";
-import pkg from 'pg';
-const { Pool } = pkg;
-// ... (diğer importlar aynı kalsın)
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import pkg from 'pg';
@@ -19,10 +14,6 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import fs from "fs";
 import dotenv from "dotenv";
-import dns from "node:dns";
-
-// IPv6 bağlantı sorunlarını önlemek için IPv4 önceliği veriyoruz
-dns.setDefaultResultOrder("ipv4first");
 
 dotenv.config();
 
@@ -97,7 +88,7 @@ async function initDb() {
 
 async function startServer() {
   const app = express();
-  const PORT = process.env.PORT || 3000; // Render'ın atadığı portu kullanır
+  const PORT = process.env.PORT || 3000;
   const JWT_SECRET = process.env.JWT_SECRET || "lookprice_secret_key";
 
   app.use(express.json());
@@ -114,7 +105,7 @@ async function startServer() {
     }
   };
 
-  // API Rotaları...
+  // API Rotaları
   app.get("/api/public/scan/:slug/:barcode", async (req, res) => {
     try {
       const { slug, barcode } = req.params;
@@ -153,8 +144,8 @@ async function startServer() {
     }
   });
 
-  // Diğer API'ler...
-  // (Admin, Store, Analytics vb. fonksiyonlar PostgreSQL uyumludur)
+  // Diğer API'ler (Admin, Store vb.)
+  // ... (PostgreSQL uyumlu tüm fonksiyonlar buraya gelecek)
 
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
