@@ -1,3 +1,12 @@
+import dns from "node:dns";
+// BU SATIR EN ÜSTTE OLMALI - IPv6 yerine IPv4'ü zorlar
+dns.setDefaultResultOrder("ipv4first");
+
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import pkg from 'pg';
+const { Pool } = pkg;
+// ... (diğer importlar aynı kalsın)
 import express from "express";
 import { createServer as createViteServer } from "vite";
 import pkg from 'pg';
