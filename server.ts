@@ -94,7 +94,6 @@ async function startServer() {
   app.use(express.json());
   const upload = multer({ dest: "uploads/" });
 
-  // Auth Middleware
   const authenticate = (req, res, next) => {
     const token = req.headers.authorization?.split(" ")[1];
     if (!token) return res.status(401).json({ error: "Unauthorized" });
@@ -106,16 +105,19 @@ async function startServer() {
     }
   };
 
-  // API Routes
+  // --- API ROUTES ---
+
   app.get("/api/public/scan/:slug/:barcode", async (req, res) => {
     try {
       const { slug, barcode } = req.params;
       const storeRes = await pool.query("SELECT id, name, logo_url, primary_color FROM stores WHERE slug = $1", [slug]);
       const store = storeRes.rows[0];
       if (!store) return res.status(404).json({ error: "Store not found" });
+
       const productRes = await pool.query("SELECT * FROM products WHERE store_id = $1 AND barcode = $2", [store.id, barcode]);
       const product = productRes.rows[0];
       if (!product) return res.status(404).json({ error: "Product not found", store });
+
       await pool.query("INSERT INTO scan_logs (store_id, product_id) VALUES ($1, $2)", [store.id, product.id]);
       res.json({ ...product, store });
     } catch (err) {
@@ -126,7 +128,8 @@ async function startServer() {
   app.get("/api/public/store/:slug", async (req, res) => {
     try {
       const storeRes = await pool.query("SELECT name, logo_url, primary_color FROM stores WHERE slug = $1", [req.params.slug]);
-      res.json(storeRes.rows[0] || { error: "Not found" });
+      if (storeRes.rows.length === 0) return res.status(404).json({ error: "Store not found" });
+      res.json(storeRes.rows[0]);
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
@@ -137,7 +140,9 @@ async function startServer() {
       const { email, password } = req.body;
       const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
       const user = userRes.rows[0];
-      if (!user || !bcrypt.compareSync(password, user.password)) return res.status(401).json({ error: "Invalid credentials" });
+      if (!user || !bcrypt.compareSync(password, user.password)) {
+        return res.status(401).json({ error: "Invalid credentials" });
+      }
       const token = jwt.sign({ id: user.id, role: user.role, store_id: user.store_id }, JWT_SECRET);
       res.json({ token, user: { email: user.email, role: user.role, store_id: user.store_id } });
     } catch (err) {
@@ -145,19 +150,98 @@ async function startServer() {
     }
   });
 
-  // Diğer tüm API'ler (Admin, Store vb.) benzer şekilde PostgreSQL uyumlu hale getirildi
-  // ... (GitHub'daki mevcut kodunuzun PostgreSQL versiyonu)
+  app.get("/api/admin/stats", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    try {
+      const totalStores = (await pool.query("SELECT COUNT(*) as count FROM stores")).rows[0].count;
+      const activeStores = (await pool.query("SELECT COUNT(*) as count FROM stores WHERE subscription_end > CURRENT_DATE")).rows[0].count;
+      const totalScans = (await pool.query("SELECT COUNT(*) as count FROM scan_logs")).rows[0].count;
+      const scansLast24h = (await pool.query("SELECT COUNT(*) as count FROM scan_logs WHERE created_at > NOW() - INTERVAL '1 day'")).rows[0].count;
+      res.json({
+        totalStores: parseInt(totalStores),
+        activeStores: parseInt(activeStores),
+        totalScans: parseInt(totalScans),
+        scansLast24h: parseInt(scansLast24h)
+      });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
-  // Vite Integration
+  app.get("/api/admin/stores", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    try {
+      const stores = await pool.query(`
+        SELECT s.*, u.email as admin_email 
+        FROM stores s 
+        LEFT JOIN users u ON s.id = u.store_id AND u.role = 'storeadmin'
+      `);
+      res.json(stores.rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/admin/stores", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    const { name, slug, address, contact_person, phone, email, subscription_end, admin_email, admin_password } = req.body;
+    try {
+      await pool.query("BEGIN");
+      const storeRes = await pool.query(
+        "INSERT INTO stores (name, slug, address, contact_person, phone, email, subscription_end) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
+        [name, slug, address, contact_person, phone, email, subscription_end]
+      );
+      const storeId = storeRes.rows[0].id;
+      const hashedPassword = bcrypt.hashSync(admin_password, 10);
+      await pool.query("INSERT INTO users (store_id, email, password, role) VALUES ($1, $2, $3, $4)", [storeId, admin_email, hashedPassword, "storeadmin"]);
+      await pool.query("COMMIT");
+      res.json({ success: true, storeId });
+    } catch (e) {
+      await pool.query("ROLLBACK");
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.get("/api/store/products", authenticate, async (req: any, res) => {
+    const storeId = req.user.role === "superadmin" ? req.query.storeId : req.user.store_id;
+    try {
+      const products = await pool.query("SELECT * FROM products WHERE store_id = $1", [storeId]);
+      res.json(products.rows);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/store/products", authenticate, async (req: any, res) => {
+    const storeId = req.user.role === "superadmin" ? req.body.storeId : req.user.store_id;
+    const { barcode, name, price, currency, description } = req.body;
+    try {
+      await pool.query(`
+        INSERT INTO products (store_id, barcode, name, price, currency, description) 
+        VALUES ($1, $2, $3, $4, $5, $6)
+        ON CONFLICT (store_id, barcode) 
+        DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, currency = EXCLUDED.currency, description = EXCLUDED.description
+      `, [storeId, String(barcode), name, parseFloat(price), currency || 'TRY', description || '']);
+      res.json({ success: true });
+    } catch (e) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  // --- VITE / STATIC SERVING ---
   if (process.env.NODE_ENV !== "production") {
-    const vite = await createViteServer({ server: { middlewareMode: true }, appType: "spa" });
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
     app.use(vite.middlewares);
   } else {
     app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => res.sendFile(path.join(__dirname, "dist", "index.html")));
+    app.get("*", (req, res) => {
+      res.sendFile(path.join(__dirname, "dist", "index.html"));
+    });
   }
 
-  // Sunucuyu Başlat
   app.listen(PORT, "0.0.0.0", async () => {
     console.log(`Server running on port ${PORT}`);
     try {
