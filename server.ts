@@ -10,6 +10,8 @@ import multer from "multer";
 import * as XLSX from "xlsx";
 import fs from "fs";
 import dotenv from "dotenv";
+import dns from 'node:dns';
+dns.setDefaultResultOrder('ipv4first');
 
 dotenv.config();
 
