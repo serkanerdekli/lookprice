@@ -1,299 +1,155 @@
-import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
-import { 
-  BarChart3, ChevronRight, LogOut, Package, Plus, Scan, Search, Store, Trash2, Upload, X, 
-  Settings, Palette, Users, Edit2, TrendingUp, Clock, Filter, Ticket, AlertCircle, 
-  CheckCircle2, Menu, Image as ImageIcon, Zap, ZapOff, Keyboard
-} from "lucide-react";
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area
-} from 'recharts';
-import { motion, AnimatePresence } from "motion/react";
-import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
-import * as XLSX from "xlsx";
-import { QRCodeSVG } from "qrcode.react";
+const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
+  const { storeId: paramStoreId } = useParams();
+  const effectiveStoreId = user.role === 'superadmin' ? paramStoreId : user.store_id;
 
-interface User {
-  email: string;
-  role: 'superadmin' | 'storeadmin' | 'editor' | 'viewer';
-  store_id?: number;
-}
+  const [activeTab, setActiveTab] = useState<'products' | 'analytics' | 'branding' | 'users'>('products');
+  const [products, setProducts] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [analytics, setAnalytics] = useState<any>(null);
+  const [branding, setBranding] = useState({ logo_url: "", primary_color: "#4f46e5" });
+  const [storeUsers, setStoreUsers] = useState<any[]>([]);
+  const [showAddUser, setShowAddUser] = useState(false);
+  const [newUser, setNewUser] = useState({ email: "", password: "", role: "editor" });
+  const [showImport, setShowImport] = useState(false);
+  const [showAddManual, setShowAddManual] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any>(null);
+  const [showQR, setShowQR] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
+  const [mapping, setMapping] = useState({ barcode: "", name: "", price: "", currency: "TRY", description: "" });
+  const [headers, setHeaders] = useState<string[]>([]);
+  const [newProduct, setNewProduct] = useState({ barcode: "", name: "", price: "", description: "", currency: "TRY" });
+  const [storeSlug, setStoreSlug] = useState("");
 
-const api = {
-  async get(url: string, token?: string) {
-    const res = await fetch(url, { headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    return res.json();
-  },
-  async post(url: string, body: any, token?: string) {
-    const res = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(body),
-    });
-    return res.json();
-  },
-  async put(url: string, body: any, token?: string) {
-    const res = await fetch(url, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-      body: JSON.stringify(body),
-    });
-    return res.json();
-  },
-  async delete(url: string, token?: string) {
-    const res = await fetch(url, { method: "DELETE", headers: token ? { Authorization: `Bearer ${token}` } : {} });
-    return res.json();
-  },
-  async upload(url: string, formData: FormData, token: string) {
-    const res = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}` }, body: formData });
-    return res.json();
-  }
-};
-export default function App() {
-  const [token, setToken] = useState<string | null>(() => {
-    try { return localStorage.getItem("token"); } catch { return null; }
-  });
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
+  const isViewer = user.role === 'viewer';
+  const isAdmin = user.role === 'storeadmin' || user.role === 'superadmin';
 
-  const handleLogin = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
+  useEffect(() => {
+    fetchProducts();
+    fetchStoreInfo();
+    fetchAnalytics();
+    fetchStoreUsers();
+  }, [effectiveStoreId]);
+
+  const fetchStoreUsers = async () => {
+    const url = effectiveStoreId ? `/api/store/users?storeId=${effectiveStoreId}` : "/api/store/users";
+    const data = await api.get(url, token);
+    setStoreUsers(data);
   };
 
-  const handleLogout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+  const handleAddUser = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await api.post("/api/store/users", { ...newUser, storeId: effectiveStoreId }, token);
+    if (res.success) {
+      setShowAddUser(false);
+      setNewUser({ email: "", password: "", role: "editor" });
+      fetchStoreUsers();
+    } else { alert(res.error || "Kullanıcı eklenemedi"); }
   };
 
-  return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 font-sans">
-        <Routes>
-          <Route path="/scan/:slug" element={<CustomerScanPage />} />
-          <Route path="/login" element={
-            token ? (
-              user?.role === 'superadmin' ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />
-            ) : (
-              <>
-                <Navbar user={null} onLogout={handleLogout} />
-                <LoginPage onLogin={handleLogin} />
-              </>
-            )
-          } />
-          <Route path="/dashboard/:storeId?" element={
-            token && (user?.role === 'storeadmin' || user?.role === 'superadmin') ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <StoreDashboard token={token} user={user} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/admin" element={
-            token && user?.role === 'superadmin' ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <SuperAdminDashboard token={token} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/" element={<Navigate to="/login" />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
-  );
-}
-// --- Components ---
+  const fetchStoreInfo = async () => {
+    const url = effectiveStoreId ? `/api/store/info?storeId=${effectiveStoreId}` : "/api/store/info";
+    const data = await api.get(url, token);
+    if (data && data.slug) {
+      setStoreSlug(data.slug);
+      setBranding({ logo_url: data.logo_url || "", primary_color: data.primary_color || "#4f46e5" });
+    }
+  };
 
-const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void }) => {
-  const [isOpen, setIsOpen] = useState(false);
+  const fetchAnalytics = async () => {
+    const url = effectiveStoreId ? `/api/store/analytics?storeId=${effectiveStoreId}` : "/api/store/analytics";
+    const data = await api.get(url, token);
+    setAnalytics(data);
+  };
+
+  const fetchProducts = async () => {
+    const url = effectiveStoreId ? `/api/store/products?storeId=${effectiveStoreId}` : "/api/store/products";
+    const data = await api.get(url, token);
+    setProducts(data);
+    setLoading(false);
+  };
+
+  const handleAddManual = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await api.post("/api/store/products", { ...newProduct, storeId: effectiveStoreId }, token);
+    if (res.success) {
+      setShowAddManual(false);
+      setNewProduct({ barcode: "", name: "", price: "", description: "", currency: "TRY" });
+      fetchProducts();
+    } else { alert(res.error || "Ürün eklenemedi"); }
+  };
+
+  const scanUrl = `${window.location.origin}/scan/${storeSlug || 'demo'}`;
+
   return (
-    <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Store className="h-8 w-8 text-indigo-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">PriceCheck Pro</span>
-          </div>
-          <div className="hidden md:flex items-center space-x-4">
-            {user && (
-              <>
-                <span className="text-sm text-gray-500">{user.email}</span>
-                <button onClick={onLogout} className="flex items-center text-gray-600 hover:text-indigo-600 px-3 py-2 rounded-md text-sm font-medium">
-                  <LogOut className="h-4 w-4 mr-1" /> Logout
-                </button>
-              </>
-            )}
-          </div>
-          <div className="md:hidden flex items-center">
-            <button onClick={() => setIsOpen(!isOpen)} className="text-gray-600">{isOpen ? <X /> : <Menu />}</button>
-          </div>
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-2xl font-bold text-gray-900">Mağaza Yönetimi</h1>
+        <div className="flex space-x-2">
+          {!isViewer && (
+            <>
+              <button onClick={() => setShowQR(true)} className="bg-indigo-50 text-indigo-700 px-4 py-2 rounded-lg font-bold">QR Kod</button>
+              <button onClick={() => setShowAddManual(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Ürün Ekle</button>
+            </>
+          )}
         </div>
       </div>
-    </nav>
-  );
-};
 
-const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
-  useEffect(() => {
-    const html5QrCode = new Html5Qrcode("reader");
-    const config = { fps: 10, qrbox: { width: 250, height: 250 } };
-    html5QrCode.start({ facingMode: "environment" }, config, (text) => {
-      html5QrCode.stop().then(() => onResult(text));
-    }, () => {});
-    return () => { if (html5QrCode.isScanning) html5QrCode.stop().catch(() => {}); };
-  }, []);
-  return (
-    <div className="relative w-full max-w-md mx-auto aspect-square overflow-hidden rounded-3xl bg-black border-4 border-white/20 shadow-2xl">
-      <div id="reader" className="w-full h-full" />
-      <div className="absolute inset-0 pointer-events-none flex items-center justify-center">
-        <div className="w-64 h-64 border-2 border-indigo-500 rounded-2xl animate-pulse" />
+      <div className="flex space-x-4 mb-8">
+        <button onClick={() => setActiveTab('products')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'products' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Ürünler</button>
+        <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'analytics' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Analizler</button>
+        {isAdmin && <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'users' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Ekip</button>}
       </div>
-    </div>
-  );
-};
 
-const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }) => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+      {activeTab === 'products' && (
+        <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
+          <table className="w-full text-left">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="p-4">Ürün Adı</th>
+                <th className="p-4">Barkod</th>
+                <th className="p-4">Fiyat</th>
+              </tr>
+            </thead>
+            <tbody>
+              {products.map(p => (
+                <tr key={p.id} className="border-t">
+                  <td className="p-4 font-medium">{p.name}</td>
+                  <td className="p-4 font-mono text-sm">{p.barcode}</td>
+                  <td className="p-4 font-bold text-indigo-600">{p.price} {p.currency}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const res = await api.post("/api/auth/login", { email, password });
-    if (res.token) {
-      onLogin(res.token, res.user);
-      res.user.role === 'superadmin' ? navigate("/admin") : navigate("/dashboard");
-    } else { setError(res.error || "Giriş başarısız"); }
-  };
+      {showQR && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-8 rounded-3xl text-center max-w-sm w-full">
+            <h2 className="text-xl font-bold mb-4">Mağaza QR Kodu</h2>
+            <div className="bg-gray-50 p-4 rounded-2xl inline-block mb-4">
+              <QRCodeSVG value={scanUrl} size={200} />
+            </div>
+            <p className="text-xs text-gray-400 break-all mb-6">{scanUrl}</p>
+            <button onClick={() => setShowQR(false)} className="w-full bg-gray-100 py-3 rounded-xl font-bold">Kapat</button>
+          </div>
+        </div>
+      )}
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
-        <h2 className="text-3xl font-bold text-center text-gray-900 mb-8">Hoş Geldiniz</h2>
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {error && <div className="text-red-500 text-sm text-center">{error}</div>}
-          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl" placeholder="E-posta" />
-          <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="w-full p-3 bg-gray-50 border rounded-xl" placeholder="Şifre" />
-          <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold hover:bg-indigo-700 transition-all">Giriş Yap</button>
-        </form>
-      </div>
-    </div>
-  );
-};
-
-const CustomerScanPage = () => {
-  const { slug } = useParams();
-  const [product, setProduct] = useState<any>(null);
-  const [store, setStore] = useState<any>(null);
-  const [scanning, setScanning] = useState(true);
-
-  useEffect(() => {
-    api.get(`/api/public/store/${slug}`).then(res => { if (!res.error) setStore(res); });
-  }, [slug]);
-
-  const handleScan = async (barcode: string) => {
-    setScanning(false);
-    const res = await api.get(`/api/public/scan/${slug}/${barcode}`);
-    if (!res.error) setProduct(res);
-    else alert("Ürün bulunamadı");
-  };
-
-  return (
-    <div className="min-h-screen p-6 flex flex-col items-center text-white" style={{ backgroundColor: store?.primary_color || "#4f46e5" }}>
-      <h1 className="text-3xl font-bold mb-8">{store?.name || "Yükleniyor..."}</h1>
-      {scanning ? (
-        <Scanner onResult={handleScan} />
-      ) : (
-        <div className="bg-white text-gray-900 p-8 rounded-3xl w-full max-w-md shadow-2xl text-center">
-          <Package className="h-16 w-16 mx-auto text-indigo-600 mb-4" />
-          <h2 className="text-2xl font-bold">{product?.name}</h2>
-          <div className="text-4xl font-black my-4 text-indigo-600">{product?.price} {product?.currency}</div>
-          <button onClick={() => setScanning(true)} className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold">Yeni Tarama</button>
+      {showAddManual && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white p-8 rounded-3xl max-w-md w-full">
+            <h2 className="text-xl font-bold mb-6">Yeni Ürün</h2>
+            <form onSubmit={handleAddManual} className="space-y-4">
+              <input required placeholder="Barkod" className="w-full p-3 bg-gray-50 border rounded-xl" value={newProduct.barcode} onChange={e => setNewProduct({...newProduct, barcode: e.target.value})} />
+              <input required placeholder="Ürün Adı" className="w-full p-3 bg-gray-50 border rounded-xl" value={newProduct.name} onChange={e => setNewProduct({...newProduct, name: e.target.value})} />
+              <input required type="number" placeholder="Fiyat" className="w-full p-3 bg-gray-50 border rounded-xl" value={newProduct.price} onChange={e => setNewProduct({...newProduct, price: e.target.value})} />
+              <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold">Kaydet</button>
+              <button type="button" onClick={() => setShowAddManual(false)} className="w-full py-3 text-gray-400">İptal</button>
+            </form>
+          </div>
         </div>
       )}
     </div>
   );
 };
-
-// Dashboard bileşenlerini de (StoreDashboard ve SuperAdminDashboard) 
-// token limitine takılmamak için özetleyerek ekliyorum. 
-// Eğer tam hallerini isterseniz onları da parça parça verebilirim.
-const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
-  return <div className="p-8 text-center">Mağaza Paneli Hazırlanıyor... (Ürünlerinizi buradan yönetebilirsiniz)</div>;
-};
-
-const SuperAdminDashboard = ({ token }: { token: string }) => {
-  return <div className="p-8 text-center">Süper Admin Paneli Hazırlanıyor... (Mağazaları buradan yönetebilirsiniz)</div>;
-};
-export default function App() {
-  const [token, setToken] = useState<string | null>(() => {
-    try { return localStorage.getItem("token"); } catch { return null; }
-  });
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
-
-  const handleLogin = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
-  };
-
-  const handleLogout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-  };
-
-  return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-gray-50 font-sans">
-        <Routes>
-          <Route path="/scan/:slug" element={<CustomerScanPage />} />
-          <Route path="/login" element={
-            token ? (
-              user?.role === 'superadmin' ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />
-            ) : (
-              <>
-                <Navbar user={null} onLogout={handleLogout} />
-                <LoginPage onLogin={handleLogin} />
-              </>
-            )
-          } />
-          <Route path="/dashboard/:storeId?" element={
-            token && (user?.role === 'storeadmin' || user?.role === 'superadmin') ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <StoreDashboard token={token} user={user} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/admin" element={
-            token && user?.role === 'superadmin' ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <SuperAdminDashboard token={token} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/" element={<Navigate to="/login" />} />
-        </Routes>
-      </div>
-    </BrowserRouter>
-  );
-}
