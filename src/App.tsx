@@ -164,76 +164,91 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
   const [hasTorch, setHasTorch] = useState(false);
   const [isTorchOn, setIsTorchOn] = useState(false);
   const [scannerInstance, setScannerInstance] = useState<Html5Qrcode | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [isStarting, setIsStarting] = useState(false);
+
+  const startScanner = async (instance: Html5Qrcode) => {
+    if (isStarting) return;
+    setIsStarting(true);
+    setError(null);
+    try {
+      const formatsToSupport = [
+        Html5QrcodeSupportedFormats.EAN_13,
+        Html5QrcodeSupportedFormats.EAN_8,
+        Html5QrcodeSupportedFormats.UPC_A,
+        Html5QrcodeSupportedFormats.UPC_E,
+        Html5QrcodeSupportedFormats.CODE_128,
+        Html5QrcodeSupportedFormats.CODE_39,
+        Html5QrcodeSupportedFormats.QR_CODE,
+      ];
+
+      const config = {
+        fps: 20,
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          const width = Math.floor(viewfinderWidth * 0.8);
+          const height = Math.floor(viewfinderHeight * 0.5);
+          return { width, height };
+        },
+        aspectRatio: 1.0,
+        disableFlip: true,
+        formatsToSupport,
+      };
+
+      // Get cameras and find the best one
+      const cameras = await Html5Qrcode.getCameras();
+      let cameraId: any = { facingMode: "environment" };
+      
+      if (cameras && cameras.length > 0) {
+        const backCamera = cameras.find(cam => 
+          cam.label.toLowerCase().includes('arka') || 
+          cam.label.toLowerCase().includes('back') || 
+          cam.label.toLowerCase().includes('rear') ||
+          cam.label.toLowerCase().includes('environment')
+        );
+        if (backCamera) {
+          cameraId = backCamera.id;
+        } else {
+          cameraId = cameras[0].id;
+        }
+      }
+
+      await instance.start(
+        cameraId,
+        config,
+        (decodedText) => {
+          if (navigator.vibrate) navigator.vibrate(100);
+          instance.stop().then(() => {
+            onResult(decodedText);
+          }).catch(() => {
+            onResult(decodedText);
+          });
+        },
+        () => {} 
+      );
+
+      const track = (instance as any).getRunningTrack();
+      if (track) {
+        const capabilities = track.getCapabilities() as any;
+        if (capabilities.torch) {
+          setHasTorch(true);
+        }
+      }
+    } catch (err: any) {
+      console.error("Scanner start error:", err);
+      setError("Kamera başlatılamadı. Lütfen kamera izni verdiğinizden ve HTTPS bağlantısı kullandığınızdan emin olun.");
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   useEffect(() => {
     const html5QrCode = new Html5Qrcode("reader");
     setScannerInstance(html5QrCode);
     
-    const startScanner = async () => {
-      try {
-        const formatsToSupport = [
-          Html5QrcodeSupportedFormats.EAN_13,
-          Html5QrcodeSupportedFormats.EAN_8,
-          Html5QrcodeSupportedFormats.UPC_A,
-          Html5QrcodeSupportedFormats.UPC_E,
-          Html5QrcodeSupportedFormats.UPC_EAN_EXTENSION,
-          Html5QrcodeSupportedFormats.CODE_128,
-          Html5QrcodeSupportedFormats.CODE_39,
-          Html5QrcodeSupportedFormats.CODE_93,
-          Html5QrcodeSupportedFormats.ITF,
-          Html5QrcodeSupportedFormats.QR_CODE,
-        ];
-
-        const config = {
-          fps: 25, // Higher FPS for smoother detection
-          qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-            // Barcodes are horizontal, so we want a wider, shorter box
-            const width = Math.floor(viewfinderWidth * 0.8);
-            const height = Math.floor(viewfinderHeight * 0.45);
-            return { width, height };
-          },
-          aspectRatio: 1.0,
-          disableFlip: true, // Performance boost
-          formatsToSupport,
-          experimentalFeatures: {
-            useBarCodeDetectorIfSupported: true
-          }
-        };
-
-        await html5QrCode.start(
-          { 
-            facingMode: "environment",
-            width: { min: 640, ideal: 1280, max: 1920 },
-            height: { min: 480, ideal: 720, max: 1080 }
-          },
-          config,
-          (decodedText) => {
-            if (navigator.vibrate) navigator.vibrate(100);
-            html5QrCode.stop().then(() => {
-              onResult(decodedText);
-            }).catch(() => {
-              onResult(decodedText);
-            });
-          },
-          () => {} 
-        );
-
-        // Check for torch support
-        const track = (html5QrCode as any).getRunningTrack();
-        if (track) {
-          const capabilities = track.getCapabilities() as any;
-          if (capabilities.torch) {
-            setHasTorch(true);
-          }
-        }
-      } catch (err) {
-        console.error("Scanner start error:", err);
-      }
-    };
-
-    startScanner();
+    const timer = setTimeout(() => startScanner(html5QrCode), 1000);
 
     return () => {
+      clearTimeout(timer);
       if (html5QrCode.isScanning) {
         html5QrCode.stop().catch(() => {});
       }
@@ -257,6 +272,22 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
     <div className="relative w-full max-w-md mx-auto aspect-square overflow-hidden rounded-3xl border-4 border-white/20 shadow-2xl bg-black">
       <div id="reader" className="w-full h-full [&_video]:object-cover" />
       
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-black/80 p-6 text-center">
+          <div className="space-y-4">
+            <AlertCircle className="h-12 w-12 text-red-500 mx-auto" />
+            <p className="text-sm text-white">{error}</p>
+            <button 
+              onClick={() => scannerInstance && startScanner(scannerInstance)}
+              className="px-4 py-2 bg-white text-gray-900 rounded-lg font-bold text-xs"
+              disabled={isStarting}
+            >
+              {isStarting ? "Başlatılıyor..." : "Yeniden Dene"}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Viewfinder Overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
         <div className="w-[85%] h-[40%] border-2 border-white/20 rounded-2xl relative">
