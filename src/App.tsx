@@ -49,7 +49,6 @@ const api = {
     return res.json();
   }
 };
-// --- Components ---
 
 const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -104,7 +103,6 @@ const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await api.post("/api/auth/login", { email, password });
@@ -113,7 +111,6 @@ const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }
       res.user.role === 'superadmin' ? navigate("/admin") : navigate("/dashboard");
     } else { setError(res.error || "Giriş başarısız"); }
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100">
@@ -134,18 +131,15 @@ const CustomerScanPage = () => {
   const [product, setProduct] = useState<any>(null);
   const [store, setStore] = useState<any>(null);
   const [scanning, setScanning] = useState(true);
-
   useEffect(() => {
     api.get(`/api/public/store/${slug}`).then(res => { if (!res.error) setStore(res); });
   }, [slug]);
-
   const handleScan = async (barcode: string) => {
     setScanning(false);
     const res = await api.get(`/api/public/scan/${slug}/${barcode}`);
     if (!res.error) setProduct(res);
     else alert("Ürün bulunamadı");
   };
-
   return (
     <div className="min-h-screen p-6 flex flex-col items-center text-white" style={{ backgroundColor: store?.primary_color || "#4f46e5" }}>
       <h1 className="text-3xl font-bold mb-8">{store?.name || "Yükleniyor..."}</h1>
@@ -162,21 +156,9 @@ const CustomerScanPage = () => {
     </div>
   );
 };
-
-// Dashboard bileşenlerini de (StoreDashboard ve SuperAdminDashboard) 
-// token limitine takılmamak için özetleyerek ekliyorum. 
-// Eğer tam hallerini isterseniz onları da parça parça verebilirim.
-const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
-  return <div className="p-8 text-center">Mağaza Paneli Hazırlanıyor... (Ürünlerinizi buradan yönetebilirsiniz)</div>;
-};
-
-const SuperAdminDashboard = ({ token }: { token: string }) => {
-  return <div className="p-8 text-center">Süper Admin Paneli Hazırlanıyor... (Mağazaları buradan yönetebilirsiniz)</div>;
-};
 const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const { storeId: paramStoreId } = useParams();
   const effectiveStoreId = user.role === 'superadmin' ? paramStoreId : user.store_id;
-
   const [activeTab, setActiveTab] = useState<'products' | 'analytics' | 'branding' | 'users'>('products');
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,72 +167,51 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const [storeUsers, setStoreUsers] = useState<any[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", role: "editor" });
-  const [showImport, setShowImport] = useState(false);
   const [showAddManual, setShowAddManual] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [showQR, setShowQR] = useState(false);
-  const [file, setFile] = useState<File | null>(null);
-  const [mapping, setMapping] = useState({ barcode: "", name: "", price: "", currency: "TRY", description: "" });
-  const [headers, setHeaders] = useState<string[]>([]);
   const [newProduct, setNewProduct] = useState({ barcode: "", name: "", price: "", description: "", currency: "TRY" });
+  const [showQR, setShowQR] = useState(false);
   const [storeSlug, setStoreSlug] = useState("");
 
   const isViewer = user.role === 'viewer';
   const isAdmin = user.role === 'storeadmin' || user.role === 'superadmin';
 
   useEffect(() => {
-    fetchProducts();
-    fetchStoreInfo();
-    fetchAnalytics();
-    fetchStoreUsers();
+    fetchProducts(); fetchStoreInfo(); fetchAnalytics(); fetchStoreUsers();
   }, [effectiveStoreId]);
 
   const fetchStoreUsers = async () => {
     const url = effectiveStoreId ? `/api/store/users?storeId=${effectiveStoreId}` : "/api/store/users";
-    const data = await api.get(url, token);
-    setStoreUsers(data);
+    const data = await api.get(url, token); setStoreUsers(data);
   };
 
   const handleAddUser = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await api.post("/api/store/users", { ...newUser, storeId: effectiveStoreId }, token);
-    if (res.success) {
-      setShowAddUser(false);
-      setNewUser({ email: "", password: "", role: "editor" });
-      fetchStoreUsers();
-    } else { alert(res.error || "Kullanıcı eklenemedi"); }
+    if (res.success) { setShowAddUser(false); setNewUser({ email: "", password: "", role: "editor" }); fetchStoreUsers(); }
+    else { alert(res.error || "Kullanıcı eklenemedi"); }
   };
 
   const fetchStoreInfo = async () => {
     const url = effectiveStoreId ? `/api/store/info?storeId=${effectiveStoreId}` : "/api/store/info";
     const data = await api.get(url, token);
-    if (data && data.slug) {
-      setStoreSlug(data.slug);
-      setBranding({ logo_url: data.logo_url || "", primary_color: data.primary_color || "#4f46e5" });
-    }
+    if (data && data.slug) { setStoreSlug(data.slug); setBranding({ logo_url: data.logo_url || "", primary_color: data.primary_color || "#4f46e5" }); }
   };
 
   const fetchAnalytics = async () => {
     const url = effectiveStoreId ? `/api/store/analytics?storeId=${effectiveStoreId}` : "/api/store/analytics";
-    const data = await api.get(url, token);
-    setAnalytics(data);
+    const data = await api.get(url, token); setAnalytics(data);
   };
 
   const fetchProducts = async () => {
     const url = effectiveStoreId ? `/api/store/products?storeId=${effectiveStoreId}` : "/api/store/products";
-    const data = await api.get(url, token);
-    setProducts(data);
-    setLoading(false);
+    const data = await api.get(url, token); setProducts(data); setLoading(false);
   };
 
   const handleAddManual = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await api.post("/api/store/products", { ...newProduct, storeId: effectiveStoreId }, token);
-    if (res.success) {
-      setShowAddManual(false);
-      setNewProduct({ barcode: "", name: "", price: "", description: "", currency: "TRY" });
-      fetchProducts();
-    } else { alert(res.error || "Ürün eklenemedi"); }
+    if (res.success) { setShowAddManual(false); setNewProduct({ barcode: "", name: "", price: "", description: "", currency: "TRY" }); fetchProducts(); }
+    else { alert(res.error || "Ürün eklenemedi"); }
   };
 
   const scanUrl = `${window.location.origin}/scan/${storeSlug || 'demo'}`;
@@ -268,49 +229,29 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
           )}
         </div>
       </div>
-
       <div className="flex space-x-4 mb-8">
         <button onClick={() => setActiveTab('products')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'products' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Ürünler</button>
         <button onClick={() => setActiveTab('analytics')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'analytics' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Analizler</button>
         {isAdmin && <button onClick={() => setActiveTab('users')} className={`px-4 py-2 rounded-lg font-bold ${activeTab === 'users' ? 'bg-indigo-600 text-white' : 'bg-gray-100'}`}>Ekip</button>}
       </div>
-
       {activeTab === 'products' && (
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           <table className="w-full text-left">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="p-4">Ürün Adı</th>
-                <th className="p-4">Barkod</th>
-                <th className="p-4">Fiyat</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map(p => (
-                <tr key={p.id} className="border-t">
-                  <td className="p-4 font-medium">{p.name}</td>
-                  <td className="p-4 font-mono text-sm">{p.barcode}</td>
-                  <td className="p-4 font-bold text-indigo-600">{p.price} {p.currency}</td>
-                </tr>
-              ))}
-            </tbody>
+            <thead className="bg-gray-50"><tr><th className="p-4">Ürün Adı</th><th className="p-4">Barkod</th><th className="p-4">Fiyat</th></tr></thead>
+            <tbody>{products.map(p => (<tr key={p.id} className="border-t"><td className="p-4 font-medium">{p.name}</td><td className="p-4 font-mono text-sm">{p.barcode}</td><td className="p-4 font-bold text-indigo-600">{p.price} {p.currency}</td></tr>))}</tbody>
           </table>
         </div>
       )}
-
       {showQR && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-8 rounded-3xl text-center max-w-sm w-full">
             <h2 className="text-xl font-bold mb-4">Mağaza QR Kodu</h2>
-            <div className="bg-gray-50 p-4 rounded-2xl inline-block mb-4">
-              <QRCodeSVG value={scanUrl} size={200} />
-            </div>
+            <div className="bg-gray-50 p-4 rounded-2xl inline-block mb-4"><QRCodeSVG value={scanUrl} size={200} /></div>
             <p className="text-xs text-gray-400 break-all mb-6">{scanUrl}</p>
             <button onClick={() => setShowQR(false)} className="w-full bg-gray-100 py-3 rounded-xl font-bold">Kapat</button>
           </div>
         </div>
       )}
-
       {showAddManual && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-8 rounded-3xl max-w-md w-full">
@@ -327,36 +268,24 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
       )}
     </div>
   );
-};
-const SuperAdminDashboard = ({ token }: { token: string }) => {
+};const SuperAdminDashboard = ({ token }: { token: string }) => {
   const [stores, setStores] = useState<any[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [newStore, setNewStore] = useState({ name: "", slug: "", admin_email: "", admin_password: "", subscription_end: "" });
-
   useEffect(() => { fetchStores(); }, []);
-
-  const fetchStores = async () => {
-    const data = await api.get("/api/admin/stores", token);
-    setStores(data);
-  };
-
+  const fetchStores = async () => { const data = await api.get("/api/admin/stores", token); setStores(data); };
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault();
     const res = await api.post("/api/admin/stores", newStore, token);
-    if (res.success) {
-      setShowAdd(false);
-      fetchStores();
-      setNewStore({ name: "", slug: "", admin_email: "", admin_password: "", subscription_end: "" });
-    } else { alert("Hata: Mağaza oluşturulamadı"); }
+    if (res.success) { setShowAdd(false); fetchStores(); setNewStore({ name: "", slug: "", admin_email: "", admin_password: "", subscription_end: "" }); }
+    else { alert("Hata: Mağaza oluşturulamadı"); }
   };
-
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Sistem Yönetimi</h1>
         <button onClick={() => setShowAdd(true)} className="bg-indigo-600 text-white px-4 py-2 rounded-lg font-bold">Yeni Mağaza Kaydı</button>
       </div>
-
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {stores.map(store => (
           <div key={store.id} className="bg-white p-6 rounded-2xl border shadow-sm">
@@ -367,7 +296,6 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
           </div>
         ))}
       </div>
-
       {showAdd && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
           <div className="bg-white p-8 rounded-3xl max-w-md w-full">
@@ -387,62 +315,21 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
     </div>
   );
 };
+
 export default function App() {
-  const [token, setToken] = useState<string | null>(() => {
-    try { return localStorage.getItem("token"); } catch { return null; }
-  });
-  const [user, setUser] = useState<User | null>(() => {
-    try {
-      const saved = localStorage.getItem("user");
-      return saved ? JSON.parse(saved) : null;
-    } catch { return null; }
-  });
-
-  const handleLogin = (newToken: string, newUser: User) => {
-    setToken(newToken);
-    setUser(newUser);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(newUser));
-  };
-
-  const handleLogout = () => {
-    setToken(null);
-    setUser(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-  };
+  const [token, setToken] = useState<string | null>(() => { try { return localStorage.getItem("token"); } catch { return null; } });
+  const [user, setUser] = useState<User | null>(() => { try { const saved = localStorage.getItem("user"); return saved ? JSON.parse(saved) : null; } catch { return null; } });
+  const handleLogin = (newToken: string, newUser: User) => { setToken(newToken); setUser(newUser); localStorage.setItem("token", newToken); localStorage.setItem("user", JSON.stringify(newUser)); };
+  const handleLogout = () => { setToken(null); setUser(null); localStorage.removeItem("token"); localStorage.removeItem("user"); };
 
   return (
     <BrowserRouter>
       <div className="min-h-screen bg-gray-50 font-sans">
         <Routes>
           <Route path="/scan/:slug" element={<CustomerScanPage />} />
-          <Route path="/login" element={
-            token ? (
-              user?.role === 'superadmin' ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />
-            ) : (
-              <>
-                <Navbar user={null} onLogout={handleLogout} />
-                <LoginPage onLogin={handleLogin} />
-              </>
-            )
-          } />
-          <Route path="/dashboard/:storeId?" element={
-            token && (user?.role === 'storeadmin' || user?.role === 'superadmin') ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <StoreDashboard token={token} user={user} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
-          <Route path="/admin" element={
-            token && user?.role === 'superadmin' ? (
-              <>
-                <Navbar user={user} onLogout={handleLogout} />
-                <SuperAdminDashboard token={token} />
-              </>
-            ) : <Navigate to="/login" />
-          } />
+          <Route path="/login" element={token ? (user?.role === 'superadmin' ? <Navigate to="/admin" /> : <Navigate to="/dashboard" />) : (<><Navbar user={null} onLogout={handleLogout} /><LoginPage onLogin={handleLogin} /></>)} />
+          <Route path="/dashboard/:storeId?" element={token && (user?.role === 'storeadmin' || user?.role === 'superadmin') ? (<><Navbar user={user} onLogout={handleLogout} /><StoreDashboard token={token} user={user} /></>) : <Navigate to="/login" />} />
+          <Route path="/admin" element={token && user?.role === 'superadmin' ? (<><Navbar user={user} onLogout={handleLogout} /><SuperAdminDashboard token={token} /></>) : <Navigate to="/login" />} />
           <Route path="/" element={<Navigate to="/login" />} />
         </Routes>
       </div>
