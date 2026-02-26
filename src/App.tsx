@@ -169,51 +169,28 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
 
   const startScanner = async (instance: Html5Qrcode) => {
     if (isStarting) return;
+    
+    // Eğer zaten tarama yapılıyorsa önce durdur
+    if (instance.isScanning) {
+      try { await instance.stop(); } catch (e) { console.error(e); }
+    }
+
     setIsStarting(true);
     setError(null);
     try {
-      const formatsToSupport = [
-        Html5QrcodeSupportedFormats.EAN_13,
-        Html5QrcodeSupportedFormats.EAN_8,
-        Html5QrcodeSupportedFormats.UPC_A,
-        Html5QrcodeSupportedFormats.UPC_E,
-        Html5QrcodeSupportedFormats.CODE_128,
-        Html5QrcodeSupportedFormats.CODE_39,
-        Html5QrcodeSupportedFormats.QR_CODE,
-      ];
-
       const config = {
-        fps: 20,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const width = Math.floor(viewfinderWidth * 0.8);
-          const height = Math.floor(viewfinderHeight * 0.5);
-          return { width, height };
-        },
+        fps: 15,
+        qrbox: { width: 250, height: 250 },
         aspectRatio: 1.0,
         disableFlip: true,
-        formatsToSupport,
       };
 
-      // Get cameras and find the best one
-      const cameras = await Html5Qrcode.getCameras();
-      let cameraId: any = { facingMode: "environment" };
-      
-      if (cameras && cameras.length > 0) {
-        const backCamera = cameras.find(cam => 
-          cam.label.toLowerCase().includes('arka') || 
-          cam.label.toLowerCase().includes('back') || 
-          cam.label.toLowerCase().includes('rear') ||
-          cam.label.toLowerCase().includes('environment')
-        );
-        if (backCamera) {
-          cameraId = backCamera.id;
-        } else {
-          cameraId = cameras[0].id;
-        }
-      }
+      // En uyumlu yöntem: Direkt facingMode objesi ile başlat
+      // Obje kirliliğini önlemek için temiz bir kopya oluşturuyoruz
+      const constraints = { facingMode: "environment" };
 
       await instance.start(
-        cameraId,
+        constraints,
         config,
         (decodedText) => {
           if (navigator.vibrate) navigator.vibrate(100);
@@ -223,19 +200,43 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
             onResult(decodedText);
           });
         },
-        () => {} 
+        () => {} // Kare hatalarını görmezden gel
       );
 
-      const track = (instance as any).getRunningTrack();
-      if (track) {
-        const capabilities = track.getCapabilities() as any;
-        if (capabilities.torch) {
-          setHasTorch(true);
+      // Fener (Torch) kontrolü - Ayrı bir try-catch içinde, ana akışı bozmasın
+      try {
+        const track = (instance as any).getRunningTrack();
+        if (track && typeof track.getCapabilities === 'function') {
+          const capabilities = track.getCapabilities();
+          if (capabilities && capabilities.torch) {
+            setHasTorch(true);
+          }
         }
+      } catch (torchErr) {
+        console.warn("Fener kontrolü desteklenmiyor:", torchErr);
       }
+      
     } catch (err: any) {
       console.error("Scanner start error:", err);
-      setError("Kamera başlatılamadı. Lütfen kamera izni verdiğinizden ve HTTPS bağlantısı kullandığınızdan emin olun.");
+      
+      // İlk yöntem başarısız olursa (facingMode hatası), kamera listesini dene
+      try {
+        const cameras = await Html5Qrcode.getCameras();
+        if (cameras && cameras.length > 0) {
+          const backCam = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('arka'));
+          await instance.start(
+            backCam ? backCam.id : cameras[0].id,
+            { fps: 15, qrbox: 250 },
+            (text) => onResult(text),
+            () => {}
+          );
+          return; // Başarılı olduysa çık
+        }
+      } catch (fallbackErr) {
+        console.error("Yedek başlatma hatası:", fallbackErr);
+      }
+
+      setError(`Kamera başlatılamadı: ${err.message || "Bilinmeyen hata"}`);
     } finally {
       setIsStarting(false);
     }
