@@ -404,6 +404,7 @@ const CustomerScanPage = () => {
   const [store, setStore] = useState<any>(null);
   const [error, setError] = useState("");
   const [scanning, setScanning] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [manualBarcode, setManualBarcode] = useState("");
   const [showManual, setShowManual] = useState(false);
 
@@ -418,14 +419,23 @@ const CustomerScanPage = () => {
 
   const handleScan = async (barcode: string) => {
     setScanning(false);
+    setLoading(true);
+    setError("");
     setShowManual(false);
-    const res = await api.get(`/api/public/scan/${slug}/${barcode}`);
-    if (res.error) {
-      setError(res.error);
-      if (res.store) setStore(res.store);
-    } else {
-      setProduct(res);
-      if (res.store) setStore(res.store);
+    
+    try {
+      const res = await api.get(`/api/public/scan/${slug}/${barcode}`);
+      if (res.error) {
+        setError(res.error);
+        if (res.store) setStore(res.store);
+      } else {
+        setProduct(res);
+        if (res.store) setStore(res.store);
+      }
+    } catch (e) {
+      setError("Sunucu hatası oluştu.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -497,7 +507,12 @@ const CustomerScanPage = () => {
           animate={{ opacity: 1, y: 0 }}
           className="w-full max-w-md bg-white text-gray-900 rounded-3xl p-8 shadow-2xl"
         >
-          {product ? (
+          {loading ? (
+            <div className="text-center py-12 space-y-4">
+              <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
+              <p className="text-gray-600 font-medium">Ürün Bilgileri Getiriliyor...</p>
+            </div>
+          ) : product ? (
             <div className="space-y-6">
               <div className="flex justify-center">
                 <div className="p-4 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
