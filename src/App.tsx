@@ -43,6 +43,7 @@ import { motion, AnimatePresence } from "motion/react";
 import { Html5Qrcode, Html5QrcodeSupportedFormats } from "html5-qrcode";
 import * as XLSX from "xlsx";
 import { QRCodeSVG } from "qrcode.react";
+import { Logo } from "./components/Logo";
 
 // --- Types ---
 interface User {
@@ -111,8 +112,8 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Store className="h-8 w-8 text-indigo-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900">PriceCheck Pro</span>
+            <Logo size={32} className="text-indigo-600" />
+            <span className="ml-2 text-xl font-bold text-gray-900 tracking-tight">PriceCheck<span className="text-indigo-600">Pro</span></span>
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
@@ -355,8 +356,11 @@ const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }
         className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100"
       >
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-extrabold text-gray-900">Welcome Back</h2>
-          <p className="mt-2 text-gray-600">Sign in to manage your store</p>
+          <div className="flex justify-center mb-4">
+            <Logo size={64} className="text-indigo-600" />
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900">Hoş Geldiniz</h2>
+          <p className="mt-2 text-gray-600">Mağazanızı yönetmek için giriş yapın</p>
         </div>
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
@@ -462,7 +466,7 @@ const CustomerScanPage = () => {
         {store?.logo_url ? (
           <img src={store.logo_url} alt={store.name} className="h-16 mx-auto mb-4 object-contain" referrerPolicy="no-referrer" />
         ) : (
-          <Store className="h-12 w-12 mx-auto mb-4 opacity-50" />
+          <Logo size={64} className="mx-auto mb-4 opacity-80 text-white" />
         )}
         <h1 className="text-3xl font-bold mb-2">{store?.name || "Price Checker"}</h1>
         <p className="opacity-80">Ürün barkodunu tarayarak detayları görün</p>
@@ -525,7 +529,7 @@ const CustomerScanPage = () => {
               <div className="space-y-6">
                 <div className="flex justify-center">
                   <div className="p-4 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
-                    <Package className="h-12 w-12" style={{ color: primaryColor }} />
+                    <Logo size={48} color={primaryColor} />
                   </div>
                 </div>
                 <div className="text-center">
@@ -846,7 +850,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
           onClick={() => setActiveTab('products')}
           className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
-          <Package className="h-4 w-4 mr-2" /> Ürünler
+          <Logo size={16} className="mr-2" /> Ürünler
         </button>
         <button 
           onClick={() => setActiveTab('analytics')}
@@ -1577,7 +1581,7 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
           <div className="bg-indigo-50 p-4 rounded-xl mr-4">
-            <Store className="h-6 w-6 text-indigo-600" />
+            <Logo size={24} className="text-indigo-600" />
           </div>
           <div>
             <p className="text-sm text-gray-500 font-medium">Toplam Mağaza</p>
@@ -1893,7 +1897,7 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
                   className="mr-3 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
                 />
                 <div className="bg-indigo-50 p-3 rounded-xl">
-                  <Store className="h-6 w-6 text-indigo-600" />
+                  <Logo size={24} className="text-indigo-600" />
                 </div>
               </div>
               <div className="flex flex-col items-end">
