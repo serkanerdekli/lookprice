@@ -526,7 +526,10 @@ const CustomerScanPage = () => {
               <div className="text-white p-6 rounded-2xl text-center" style={{ backgroundColor: primaryColor }}>
                 <span className="text-sm uppercase tracking-widest opacity-80">Price</span>
                 <div className="text-4xl font-black mt-1">
-                  {product.price.toLocaleString('tr-TR', { style: 'currency', currency: product.currency })}
+                  {product.price.toLocaleString('tr-TR', { 
+                    style: 'currency', 
+                    currency: product.currency || store?.default_currency || 'TRY' 
+                  })}
                 </div>
               </div>
               {product.description && (
@@ -579,7 +582,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [branding, setBranding] = useState({ logo_url: "", primary_color: "#4f46e5" });
+  const [branding, setBranding] = useState({ logo_url: "", primary_color: "#4f46e5", default_currency: "TRY" });
   const [storeUsers, setStoreUsers] = useState<any[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", role: "editor" });
@@ -641,7 +644,14 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
     const data = await api.get(url, token);
     if (data && data.slug) {
       setStoreSlug(data.slug);
-      setBranding({ logo_url: data.logo_url || "", primary_color: data.primary_color || "#4f46e5" });
+      const defaultCurrency = data.default_currency || "TRY";
+      setBranding({ 
+        logo_url: data.logo_url || "", 
+        primary_color: data.primary_color || "#4f46e5",
+        default_currency: defaultCurrency
+      });
+      setNewProduct(prev => ({ ...prev, currency: defaultCurrency }));
+      setMapping(prev => ({ ...prev, currency: defaultCurrency }));
     }
   };
 
@@ -904,6 +914,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
                       <option value="TRY">TRY</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
                     </select>
                   </div>
                 </div>
@@ -947,6 +958,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
                       <option value="TRY">TRY</option>
                       <option value="USD">USD</option>
                       <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
                     </select>
                   </div>
                 </div>
@@ -1267,17 +1279,18 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
               </div>
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ana Renk (Primary Color)</label>
-              <div className="flex items-center space-x-4">
-                <input 
-                  type="color" 
-                  className="h-12 w-24 p-1 bg-gray-50 border rounded-xl cursor-pointer" 
-                  value={branding.primary_color} 
-                  onChange={e => setBranding({...branding, primary_color: e.target.value})} 
-                />
-                <span className="text-sm font-mono text-gray-500 uppercase">{branding.primary_color}</span>
-              </div>
-              <p className="mt-2 text-xs text-gray-400">Bu renk müşteri tarama sayfasının arka planı ve butonları için kullanılacaktır.</p>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Varsayılan Para Birimi</label>
+              <select 
+                className="w-full p-3 bg-gray-50 border rounded-xl" 
+                value={branding.default_currency} 
+                onChange={e => setBranding({...branding, default_currency: e.target.value})}
+              >
+                <option value="TRY">TL (TRY)</option>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EURO (€)</option>
+                <option value="GBP">GBP (£)</option>
+              </select>
+              <p className="mt-2 text-xs text-gray-400">Yeni ürünler eklenirken varsayılan olarak bu para birimi seçilecektir.</p>
             </div>
             <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-100">
               Ayarları Kaydet
@@ -1398,7 +1411,8 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
     email: "",
     admin_email: "", 
     admin_password: "", 
-    subscription_end: "" 
+    subscription_end: "",
+    default_currency: "TRY"
   });
 
   useEffect(() => {
@@ -1654,13 +1668,17 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
                     />
                   </div>
                   <div>
-                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Abonelik Bitiş</label>
-                    <input 
-                      type="date" 
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Para Birimi</label>
+                    <select 
                       className="w-full p-3 bg-gray-50 border rounded-xl" 
-                      value={editingStore.subscription_end ? editingStore.subscription_end.split('T')[0] : ""} 
-                      onChange={e => setEditingStore({...editingStore, subscription_end: e.target.value})} 
-                    />
+                      value={editingStore.default_currency || "TRY"} 
+                      onChange={e => setEditingStore({...editingStore, default_currency: e.target.value})}
+                    >
+                      <option value="TRY">TRY</option>
+                      <option value="USD">USD</option>
+                      <option value="EUR">EUR</option>
+                      <option value="GBP">GBP</option>
+                    </select>
                   </div>
                 </div>
                 <div className="md:col-span-2 flex space-x-3 mt-4">
@@ -1789,6 +1807,19 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700">Subscription End Date</label>
                 <input type="date" required className="mt-1 block w-full p-3 bg-gray-50 border rounded-xl" value={newStore.subscription_end} onChange={e => setNewStore({...newStore, subscription_end: e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">Default Currency</label>
+                <select 
+                  className="mt-1 block w-full p-3 bg-gray-50 border rounded-xl" 
+                  value={newStore.default_currency} 
+                  onChange={e => setNewStore({...newStore, default_currency: e.target.value})}
+                >
+                  <option value="TRY">TRY</option>
+                  <option value="USD">USD</option>
+                  <option value="EUR">EUR</option>
+                  <option value="GBP">GBP</option>
+                </select>
               </div>
               <div className="flex justify-end space-x-3 pt-10">
                 <button type="button" onClick={() => setShowAdd(false)} className="px-6 py-3 text-gray-500 font-medium">Cancel</button>
