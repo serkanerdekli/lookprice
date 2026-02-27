@@ -309,15 +309,28 @@ async function startServer() {
 
   app.put("/api/admin/stores/:id", authenticate, async (req: any, res) => {
     if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
-    const { name, slug, address, contact_person, phone, email, subscription_end, default_currency } = req.body;
+    const { name, slug, address, contact_person, phone, email, subscription_end, default_currency, admin_password } = req.body;
     try {
+      await pool.query("BEGIN");
       await pool.query(`
         UPDATE stores 
         SET name = $1, slug = $2, address = $3, contact_person = $4, phone = $5, email = $6, subscription_end = $7, default_currency = $8
         WHERE id = $9
       `, [name, slug, address, contact_person, phone, email, subscription_end, default_currency || 'TRY', req.params.id]);
+
+      if (admin_password) {
+        const hashedPassword = bcrypt.hashSync(admin_password, 10);
+        await pool.query(`
+          UPDATE users 
+          SET password = $1 
+          WHERE store_id = $2 AND role = 'storeadmin'
+        `, [hashedPassword, req.params.id]);
+      }
+
+      await pool.query("COMMIT");
       res.json({ success: true });
     } catch (e: any) {
+      await pool.query("ROLLBACK");
       res.status(400).json({ error: e.message });
     }
   });
