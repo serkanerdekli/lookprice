@@ -168,6 +168,13 @@ async function startServer() {
   });
 
   // Public: Get Store Info (for branding on scan page load)
+  app.post("/api/public/demo-request", async (req, res) => {
+    const { name, storeName, phone, email } = req.body;
+    // In a real app, we would save this to a 'leads' table or send an email
+    console.log("New Demo Request:", { name, storeName, phone, email });
+    res.json({ success: true, message: "Talebiniz başarıyla alındı." });
+  });
+
   app.get("/api/public/store/:slug", async (req, res) => {
     const storeRes = await pool.query("SELECT name, logo_url, primary_color, default_currency, background_image_url FROM stores WHERE slug = $1", [req.params.slug]);
     const store = storeRes.rows[0];
