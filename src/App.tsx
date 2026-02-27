@@ -112,12 +112,20 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
     <nav className="bg-white border-b border-gray-200 sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
-          <div className="flex items-center">
+          <div className="flex items-center cursor-pointer" onClick={() => navigate("/")}>
             <Logo size={32} className="text-indigo-600" />
-            <span className="ml-2 text-xl font-bold text-gray-900 tracking-tight">PriceCheck<span className="text-indigo-600">Pro</span></span>
+            <span className="ml-2 text-xl font-bold text-gray-900 tracking-tight">Look<span className="text-indigo-600">Price</span></span>
           </div>
           
           <div className="hidden md:flex items-center space-x-4">
+            {!user && (
+              <button 
+                onClick={() => navigate("/login")}
+                className="bg-indigo-600 text-white px-4 py-2 rounded-xl text-sm font-bold hover:bg-indigo-700 transition-colors"
+              >
+                Giriş Yap
+              </button>
+            )}
             {user && (
               <>
                 <span className="text-sm text-gray-500">{user.email}</span>
@@ -147,6 +155,17 @@ const Navbar = ({ user, onLogout }: { user: User | null, onLogout: () => void })
             exit={{ opacity: 0, y: -10 }}
             className="md:hidden bg-white border-b border-gray-200 px-4 pt-2 pb-3 space-y-1"
           >
+            {!user && (
+              <button 
+                onClick={() => {
+                  navigate("/login");
+                  setIsOpen(false);
+                }}
+                className="block w-full text-left px-3 py-2 text-base font-medium text-indigo-600 font-bold"
+              >
+                Giriş Yap
+              </button>
+            )}
             {user && (
               <button 
                 onClick={onLogout}
@@ -325,6 +344,162 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
           {isTorchOn ? <ZapOff className="h-6 w-6" /> : <Zap className="h-6 w-6" />}
         </button>
       )}
+    </div>
+  );
+};
+
+const LandingPage = () => {
+  const navigate = useNavigate();
+  
+  const references = [
+    { name: "Migros", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Migros_logo.svg/1200px-Migros_logo.svg.png" },
+    { name: "CarrefourSA", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/CarrefourSA_logo.svg/2560px-CarrefourSA_logo.svg.png" },
+    { name: "BİM", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Bim_logo.svg/1200px-Bim_logo.svg.png" },
+    { name: "A101", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/A101_logo.svg/1200px-A101_logo.svg.png" },
+    { name: "Şok Market", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/%C5%9Eok_Market_logo.svg/1200px-%C5%9Eok_Market_logo.svg.png" }
+  ];
+
+  return (
+    <div className="bg-white">
+      {/* Hero Section */}
+      <section className="relative py-20 overflow-hidden bg-indigo-600">
+        <div className="absolute top-0 left-0 w-full h-full opacity-10">
+          <div className="absolute top-0 left-0 w-96 h-96 bg-white rounded-full -translate-x-1/2 -translate-y-1/2 blur-3xl"></div>
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-white rounded-full translate-x-1/2 translate-y-1/2 blur-3xl"></div>
+        </div>
+        
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <div className="flex justify-center mb-6">
+                <Logo size={80} className="text-white" />
+              </div>
+              <h1 className="text-4xl md:text-6xl font-extrabold text-white tracking-tight mb-6">
+                LookPrice <span className="text-indigo-200">ile Tanışın</span>
+              </h1>
+              <p className="max-w-2xl mx-auto text-xl text-indigo-100 mb-10">
+                Müşterileriniz fiyat sormaktan yorulmasın. QR kod teknolojisi ile mağazanızdaki tüm ürünlerin güncel fiyatlarını anında gösterin.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <button 
+                  onClick={() => navigate("/login")}
+                  className="px-8 py-4 bg-white text-indigo-600 rounded-2xl font-bold text-lg shadow-xl hover:bg-indigo-50 transition-all transform hover:-translate-y-1"
+                >
+                  Hemen Başlayın
+                </button>
+                <button 
+                  className="px-8 py-4 bg-indigo-500 text-white border border-indigo-400 rounded-2xl font-bold text-lg hover:bg-indigo-400 transition-all"
+                >
+                  Demo İzleyin
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-gray-900">Neden LookPrice?</h2>
+            <p className="mt-4 text-gray-600">Mağaza operasyonlarınızı dijitalleştirin, müşteri memnuniyetini artırın.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-indigo-100 rounded-2xl flex items-center justify-center mb-6">
+                <Scan className="text-indigo-600 h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Hızlı Tarama</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Müşterileriniz herhangi bir uygulama indirmeden, sadece telefonlarının kamerasıyla QR kodları taratarak fiyatlara ulaşır.
+              </p>
+            </div>
+            
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-emerald-100 rounded-2xl flex items-center justify-center mb-6">
+                <Zap className="text-emerald-600 h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Anlık Güncelleme</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Fiyat değişimlerini saniyeler içinde tüm mağazaya yansıtın. Kağıt etiket değiştirme derdine son verin.
+              </p>
+            </div>
+            
+            <div className="bg-white p-8 rounded-3xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+              <div className="w-14 h-14 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
+                <BarChart3 className="text-purple-600 h-8 w-8" />
+              </div>
+              <h3 className="text-xl font-bold mb-4">Detaylı Analiz</h3>
+              <p className="text-gray-600 leading-relaxed">
+                Hangi ürünlerin daha çok merak edildiğini, hangi saatlerde yoğunluk olduğunu gelişmiş raporlarla takip edin.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* References Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-4">Referanslarımız</h3>
+            <h2 className="text-3xl font-bold text-gray-900">Bize Güvenen Markalar</h2>
+          </div>
+          
+          <div className="flex flex-wrap justify-center items-center gap-12 opacity-50 grayscale hover:grayscale-0 transition-all duration-500">
+            {references.map((ref, idx) => (
+              <img 
+                key={idx} 
+                src={ref.logo} 
+                alt={ref.name} 
+                className="h-12 w-auto object-contain max-w-[150px]" 
+                referrerPolicy="no-referrer"
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-indigo-900 rounded-[3rem] p-12 text-center relative overflow-hidden">
+            <div className="relative z-10">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">Hemen LookPrice Dünyasına Katılın</h2>
+              <p className="text-indigo-200 text-lg mb-10 max-w-xl mx-auto">
+                Mağazanızın geleceğini bugünden inşa edin. Ücretsiz demo için bizimle iletişime geçin.
+              </p>
+              <button 
+                onClick={() => navigate("/login")}
+                className="px-10 py-4 bg-white text-indigo-900 rounded-2xl font-bold text-lg shadow-2xl hover:bg-indigo-50 transition-all"
+              >
+                Ücretsiz Deneyin
+              </button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="bg-gray-900 py-12 text-gray-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="flex justify-center mb-6">
+            <Logo size={32} className="text-white" />
+          </div>
+          <p className="mb-4">© 2026 LookPrice. Tüm hakları saklıdır.</p>
+          <div className="flex justify-center space-x-6">
+            <a href="#" className="hover:text-white transition-colors">Kullanım Şartları</a>
+            <a href="#" className="hover:text-white transition-colors">Gizlilik Politikası</a>
+            <a href="#" className="hover:text-white transition-colors">İletişim</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 };
@@ -2303,7 +2478,12 @@ export default function App() {
             ) : <Navigate to="/login" />
           } />
 
-          <Route path="/" element={<Navigate to="/login" />} />
+          <Route path="/" element={
+            <>
+              <Navbar user={token ? user : null} onLogout={handleLogout} />
+              <LandingPage />
+            </>
+          } />
         </Routes>
       </div>
     </BrowserRouter>
