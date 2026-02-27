@@ -546,7 +546,7 @@ const LandingPage = () => {
                 </li>
                 <li className="flex items-center justify-center">
                   <Mail className="h-4 w-4 mr-2 text-indigo-500" />
-                  <a href="mailto:lookprice-me@gmail.com" className="hover:text-white transition-colors">lookprice-me@gmail.com</a>
+                  <a href="mailto:lookprice.me@gmail.com" className="hover:text-white transition-colors">lookprice.me@gmail.com</a>
                 </li>
               </ul>
             </div>
