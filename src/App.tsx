@@ -449,8 +449,16 @@ const CustomerScanPage = () => {
   const primaryColor = store?.primary_color || "#4f46e5";
 
   return (
-    <div className="min-h-screen text-white p-6 flex flex-col items-center transition-colors duration-500" style={{ backgroundColor: primaryColor }}>
-      <div className="w-full max-w-md text-center mb-8">
+    <div className="min-h-screen text-white p-6 flex flex-col items-center transition-colors duration-500 relative overflow-hidden" style={{ backgroundColor: primaryColor }}>
+      {/* Background Image Overlay */}
+      {store?.background_image_url && (
+        <div 
+          className="absolute inset-0 z-0 opacity-20 pointer-events-none bg-cover bg-center bg-no-repeat"
+          style={{ backgroundImage: `url(${store.background_image_url})` }}
+        />
+      )}
+      
+      <div className="w-full max-w-md text-center mb-8 relative z-10">
         {store?.logo_url ? (
           <img src={store.logo_url} alt={store.name} className="h-16 mx-auto mb-4 object-contain" referrerPolicy="no-referrer" />
         ) : (
@@ -460,107 +468,109 @@ const CustomerScanPage = () => {
         <p className="opacity-80">Ürün barkodunu tarayarak detayları görün</p>
       </div>
 
-      {scanning ? (
-        <div className="w-full max-w-md space-y-6">
-          <Scanner onResult={handleScan} />
-          
-          <div className="flex flex-col items-center space-y-4">
-            <button 
-              onClick={() => setShowManual(!showManual)}
-              className="flex items-center text-sm font-bold opacity-70 hover:opacity-100 transition-opacity"
-            >
-              <Keyboard className="h-4 w-4 mr-2" /> 
-              {showManual ? "Kameraya Dön" : "Barkodu Elle Gir"}
-            </button>
-
-            <AnimatePresence>
-              {showManual && (
-                <motion.form 
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: 'auto' }}
-                  exit={{ opacity: 0, height: 0 }}
-                  onSubmit={handleManualSubmit}
-                  className="w-full flex space-x-2 overflow-hidden"
-                >
-                  <input 
-                    type="text" 
-                    placeholder="Barkod numarasını yazın..."
-                    className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:ring-2 focus:ring-white/50 outline-none"
-                    value={manualBarcode}
-                    onChange={(e) => setManualBarcode(e.target.value)}
-                    autoFocus
-                  />
-                  <button 
-                    type="submit"
-                    className="bg-white text-gray-900 px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform"
+      <div className="w-full max-w-md relative z-10">
+        {scanning ? (
+          <div className="w-full max-w-md space-y-6">
+            <Scanner onResult={handleScan} />
+            
+            <div className="flex flex-col items-center space-y-4">
+              <button 
+                onClick={() => setShowManual(!showManual)}
+                className="flex items-center text-sm font-bold opacity-70 hover:opacity-100 transition-opacity"
+              >
+                <Keyboard className="h-4 w-4 mr-2" /> 
+                {showManual ? "Kameraya Dön" : "Barkodu Elle Gir"}
+              </button>
+  
+              <AnimatePresence>
+                {showManual && (
+                  <motion.form 
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: 'auto' }}
+                    exit={{ opacity: 0, height: 0 }}
+                    onSubmit={handleManualSubmit}
+                    className="w-full flex space-x-2 overflow-hidden"
                   >
-                    Sorgula
-                  </button>
-                </motion.form>
-              )}
-            </AnimatePresence>
+                    <input 
+                      type="text" 
+                      placeholder="Barkod numarasını yazın..."
+                      className="flex-1 bg-white/10 border border-white/20 rounded-xl px-4 py-3 text-white placeholder:text-white/40 focus:ring-2 focus:ring-white/50 outline-none"
+                      value={manualBarcode}
+                      onChange={(e) => setManualBarcode(e.target.value)}
+                      autoFocus
+                    />
+                    <button 
+                      type="submit"
+                      className="bg-white text-gray-900 px-6 py-3 rounded-xl font-bold active:scale-95 transition-transform"
+                    >
+                      Sorgula
+                    </button>
+                  </motion.form>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
-        </div>
-      ) : (
-        <motion.div 
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="w-full max-w-md bg-white text-gray-900 rounded-3xl p-8 shadow-2xl"
-        >
-          {loading ? (
-            <div className="text-center py-12 space-y-4">
-              <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
-              <p className="text-gray-600 font-medium">Ürün Bilgileri Getiriliyor...</p>
-            </div>
-          ) : product ? (
-            <div className="space-y-6">
-              <div className="flex justify-center">
-                <div className="p-4 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
-                  <Package className="h-12 w-12" style={{ color: primaryColor }} />
-                </div>
+        ) : (
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="w-full max-w-md bg-white text-gray-900 rounded-3xl p-8 shadow-2xl"
+          >
+            {loading ? (
+              <div className="text-center py-12 space-y-4">
+                <div className="animate-spin h-12 w-12 border-4 border-indigo-600 border-t-transparent rounded-full mx-auto"></div>
+                <p className="text-gray-600 font-medium">Ürün Bilgileri Getiriliyor...</p>
               </div>
-              <div className="text-center">
-                <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
-                <p className="text-gray-500 mt-1">Barcode: {product.barcode}</p>
-              </div>
-              <div className="text-white p-6 rounded-2xl text-center" style={{ backgroundColor: primaryColor }}>
-                <span className="text-sm uppercase tracking-widest opacity-80">Price</span>
-                <div className="text-4xl font-black mt-1">
-                  {product.price.toLocaleString('tr-TR', { 
-                    style: 'currency', 
-                    currency: product.currency || store?.default_currency || 'TRY' 
-                  })}
+            ) : product ? (
+              <div className="space-y-6">
+                <div className="flex justify-center">
+                  <div className="p-4 rounded-full" style={{ backgroundColor: `${primaryColor}15` }}>
+                    <Package className="h-12 w-12" style={{ color: primaryColor }} />
+                  </div>
                 </div>
-              </div>
-              {product.description && (
-                <div className="text-gray-600 text-sm border-t pt-4">
-                  {product.description}
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold text-gray-900">{product.name}</h2>
+                  <p className="text-gray-500 mt-1">Barcode: {product.barcode}</p>
                 </div>
-              )}
-              <button 
-                onClick={() => { setProduct(null); setScanning(true); setError(""); }}
-                className="w-full text-white py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95"
-                style={{ backgroundColor: primaryColor }}
-              >
-                Scan Another
-              </button>
-            </div>
-          ) : (
-            <div className="text-center space-y-4">
-              <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
-              <h2 className="text-xl font-bold">Product Not Found</h2>
-              <p className="text-gray-500">{error}</p>
-              <button 
-                onClick={() => { setScanning(true); setError(""); }}
-                className="w-full text-white py-4 rounded-xl font-bold"
-                style={{ backgroundColor: primaryColor }}
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-        </motion.div>
-      )}
+                <div className="text-white p-6 rounded-2xl text-center" style={{ backgroundColor: primaryColor }}>
+                  <span className="text-sm uppercase tracking-widest opacity-80">Price</span>
+                  <div className="text-4xl font-black mt-1">
+                    {product.price.toLocaleString('tr-TR', { 
+                      style: 'currency', 
+                      currency: product.currency || store?.default_currency || 'TRY' 
+                    })}
+                  </div>
+                </div>
+                {product.description && (
+                  <div className="text-gray-600 text-sm border-t pt-4">
+                    {product.description}
+                  </div>
+                )}
+                <button 
+                  onClick={() => { setProduct(null); setScanning(true); setError(""); }}
+                  className="w-full text-white py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Scan Another
+                </button>
+              </div>
+            ) : (
+              <div className="text-center space-y-4">
+                <AlertCircle className="h-16 w-16 text-red-500 mx-auto" />
+                <h2 className="text-xl font-bold">Product Not Found</h2>
+                <p className="text-gray-500">{error}</p>
+                <button 
+                  onClick={() => { setScanning(true); setError(""); }}
+                  className="w-full text-white py-4 rounded-xl font-bold"
+                  style={{ backgroundColor: primaryColor }}
+                >
+                  Try Again
+                </button>
+              </div>
+            )}
+          </motion.div>
+        )}
+      </div>
 
       <div className="mt-auto pt-8 text-center">
         <button 
@@ -582,7 +592,12 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
-  const [branding, setBranding] = useState({ logo_url: "", primary_color: "#4f46e5", default_currency: "TRY" });
+  const [branding, setBranding] = useState({ 
+    logo_url: "", 
+    primary_color: "#4f46e5", 
+    default_currency: "TRY",
+    background_image_url: ""
+  });
   const [storeUsers, setStoreUsers] = useState<any[]>([]);
   const [showAddUser, setShowAddUser] = useState(false);
   const [newUser, setNewUser] = useState({ email: "", password: "", role: "editor" });
@@ -648,7 +663,8 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
       setBranding({ 
         logo_url: data.logo_url || "", 
         primary_color: data.primary_color || "#4f46e5",
-        default_currency: defaultCurrency
+        default_currency: defaultCurrency,
+        background_image_url: data.background_image_url || ""
       });
       setNewProduct(prev => ({ ...prev, currency: defaultCurrency }));
       setMapping(prev => ({ ...prev, currency: defaultCurrency }));
@@ -1291,6 +1307,37 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
                 <option value="GBP">GBP (£)</option>
               </select>
               <p className="mt-2 text-xs text-gray-400">Yeni ürünler eklenirken varsayılan olarak bu para birimi seçilecektir.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Ana Renk (Primary Color)</label>
+              <div className="flex items-center space-x-4">
+                <input 
+                  type="color" 
+                  className="h-12 w-24 p-1 bg-gray-50 border rounded-xl cursor-pointer" 
+                  value={branding.primary_color} 
+                  onChange={e => setBranding({...branding, primary_color: e.target.value})} 
+                />
+                <span className="text-sm font-mono text-gray-500 uppercase">{branding.primary_color}</span>
+              </div>
+              <p className="mt-2 text-xs text-gray-400">Bu renk müşteri tarama sayfasının arka planı ve butonları için kullanılacaktır.</p>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Arka Plan Görseli (URL)</label>
+              <div className="flex space-x-4">
+                <input 
+                  type="url" 
+                  className="flex-1 p-3 bg-gray-50 border rounded-xl" 
+                  value={branding.background_image_url} 
+                  onChange={e => setBranding({...branding, background_image_url: e.target.value})} 
+                  placeholder="https://example.com/background.jpg"
+                />
+                {branding.background_image_url && (
+                  <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center overflow-hidden border">
+                    <img src={branding.background_image_url} alt="Preview" className="max-w-full max-h-full object-cover" referrerPolicy="no-referrer" />
+                  </div>
+                )}
+              </div>
+              <p className="mt-2 text-xs text-gray-400">Müşteri tarama sayfasında arka planda saydam olarak gösterilecektir.</p>
             </div>
             <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-100">
               Ayarları Kaydet
