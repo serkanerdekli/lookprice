@@ -41,6 +41,7 @@ async function initDb() {
         subscription_end DATE,
         logo_url TEXT,
         primary_color TEXT DEFAULT '#4f46e5',
+        default_currency TEXT DEFAULT 'TRY',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -85,6 +86,16 @@ async function initDb() {
       );
     `);
 
+    // Ensure default_currency column exists
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='default_currency') THEN
+          ALTER TABLE stores ADD COLUMN default_currency TEXT DEFAULT 'TRY';
+        END IF;
+      END $$;
+    `);
+
     // Seed Super Admin if not exists
     const adminEmail = "admin@pricecheck.com";
     const existingAdmin = await client.query("SELECT * FROM users WHERE email = $1", [adminEmail]);
@@ -124,7 +135,7 @@ async function startServer() {
   // Public: Get Product by Barcode and Store Slug
   app.get("/api/public/scan/:slug/:barcode", async (req, res) => {
     const { slug, barcode } = req.params;
-    const storeRes = await pool.query("SELECT id, name, logo_url, primary_color FROM stores WHERE slug = $1", [slug]);
+    const storeRes = await pool.query("SELECT id, name, logo_url, primary_color, default_currency FROM stores WHERE slug = $1", [slug]);
     const store = storeRes.rows[0];
     if (!store) return res.status(404).json({ error: "Store not found" });
 
@@ -140,7 +151,7 @@ async function startServer() {
 
   // Public: Get Store Info (for branding on scan page load)
   app.get("/api/public/store/:slug", async (req, res) => {
-    const storeRes = await pool.query("SELECT name, logo_url, primary_color FROM stores WHERE slug = $1", [req.params.slug]);
+    const storeRes = await pool.query("SELECT name, logo_url, primary_color, default_currency FROM stores WHERE slug = $1", [req.params.slug]);
     const store = storeRes.rows[0];
     if (!store) return res.status(404).json({ error: "Store not found" });
     res.json(store);
@@ -209,12 +220,12 @@ async function startServer() {
 
   app.post("/api/admin/stores", authenticate, async (req: any, res) => {
     if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
-    const { name, slug, address, contact_person, phone, email, subscription_end, admin_email, admin_password } = req.body;
+    const { name, slug, address, contact_person, phone, email, subscription_end, admin_email, admin_password, default_currency } = req.body;
     try {
       await pool.query("BEGIN");
       const storeRes = await pool.query(
-        "INSERT INTO stores (name, slug, address, contact_person, phone, email, subscription_end) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING id",
-        [name, slug, address, contact_person, phone, email, subscription_end]
+        "INSERT INTO stores (name, slug, address, contact_person, phone, email, subscription_end, default_currency) VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id",
+        [name, slug, address, contact_person, phone, email, subscription_end, default_currency || 'TRY']
       );
       const storeId = storeRes.rows[0].id;
       const hashedPassword = bcrypt.hashSync(admin_password, 10);
@@ -229,13 +240,13 @@ async function startServer() {
 
   app.put("/api/admin/stores/:id", authenticate, async (req: any, res) => {
     if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
-    const { name, slug, address, contact_person, phone, email, subscription_end } = req.body;
+    const { name, slug, address, contact_person, phone, email, subscription_end, default_currency } = req.body;
     try {
       await pool.query(`
         UPDATE stores 
-        SET name = $1, slug = $2, address = $3, contact_person = $4, phone = $5, email = $6, subscription_end = $7 
-        WHERE id = $8
-      `, [name, slug, address, contact_person, phone, email, subscription_end, req.params.id]);
+        SET name = $1, slug = $2, address = $3, contact_person = $4, phone = $5, email = $6, subscription_end = $7, default_currency = $8
+        WHERE id = $9
+      `, [name, slug, address, contact_person, phone, email, subscription_end, default_currency || 'TRY', req.params.id]);
       res.json({ success: true });
     } catch (e: any) {
       res.status(400).json({ error: e.message });
@@ -257,8 +268,8 @@ async function startServer() {
     const storeId = req.user.role === "superadmin" ? req.body.storeId : req.user.store_id;
     if (!storeId) return res.status(400).json({ error: "Store ID required" });
 
-    const { logo_url, primary_color } = req.body;
-    await pool.query("UPDATE stores SET logo_url = $1, primary_color = $2 WHERE id = $3", [logo_url, primary_color, storeId]);
+    const { logo_url, primary_color, default_currency } = req.body;
+    await pool.query("UPDATE stores SET logo_url = $1, primary_color = $2, default_currency = $3 WHERE id = $4", [logo_url, primary_color, default_currency || 'TRY', storeId]);
     res.json({ success: true });
   });
 
@@ -438,6 +449,7 @@ async function startServer() {
         const price = parseFloat(priceStr);
 
         if (barcode && name && !isNaN(price)) {
+          const currency = item[mapping.currency] || mapping.currency || 'TRY';
           await pool.query(`
             INSERT INTO products (store_id, barcode, name, price, currency, description) 
             VALUES ($1, $2, $3, $4, $5, $6)
@@ -448,7 +460,7 @@ async function startServer() {
             barcode,
             name,
             price,
-            item[mapping.currency] || 'TRY',
+            currency,
             item[mapping.description] || ''
           ]);
           successCount++;
