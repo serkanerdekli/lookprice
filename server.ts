@@ -73,6 +73,8 @@ async function initDb() {
         email TEXT UNIQUE NOT NULL,
         password TEXT NOT NULL,
         role TEXT CHECK(role IN ('superadmin', 'storeadmin', 'editor', 'viewer')) NOT NULL,
+        reset_token TEXT,
+        reset_token_expiry TIMESTAMP,
         FOREIGN KEY (store_id) REFERENCES stores(id)
       );
 
@@ -96,6 +98,18 @@ async function initDb() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='background_image_url') THEN
           ALTER TABLE stores ADD COLUMN background_image_url TEXT;
+        END IF;
+      END $$;
+    `);
+
+    await client.query(`
+      DO $$ 
+      BEGIN 
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='reset_token') THEN
+          ALTER TABLE users ADD COLUMN reset_token TEXT;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='reset_token_expiry') THEN
+          ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP;
         END IF;
       END $$;
     `);
@@ -171,6 +185,57 @@ async function startServer() {
     }
     const token = jwt.sign({ id: user.id, role: user.role, store_id: user.store_id }, JWT_SECRET);
     res.json({ token, user: { email: user.email, role: user.role, store_id: user.store_id } });
+  });
+
+  app.post("/api/auth/change-password", authenticate, async (req: any, res) => {
+    const { currentPassword, newPassword } = req.body;
+    const userRes = await pool.query("SELECT * FROM users WHERE id = $1", [req.user.id]);
+    const user = userRes.rows[0];
+
+    if (user && bcrypt.compareSync(currentPassword, user.password)) {
+      const hashedPassword = bcrypt.hashSync(newPassword, 10);
+      await pool.query("UPDATE users SET password = $1 WHERE id = $2", [hashedPassword, req.user.id]);
+      res.json({ success: true });
+    } else {
+      res.status(400).json({ error: "Mevcut şifre hatalı" });
+    }
+  });
+
+  app.post("/api/auth/forgot-password", async (req, res) => {
+    const { email } = req.body;
+    const userRes = await pool.query("SELECT * FROM users WHERE email = $1", [email]);
+    const user = userRes.rows[0];
+
+    if (!user) {
+      return res.status(404).json({ error: "Bu e-posta adresiyle kayıtlı kullanıcı bulunamadı" });
+    }
+
+    const token = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    const expiry = new Date(Date.now() + 3600000); // 1 hour
+
+    await pool.query("UPDATE users SET reset_token = $1, reset_token_expiry = $2 WHERE id = $3", [token, expiry, user.id]);
+
+    console.log(`Password reset link: /reset-password/${token}`);
+    
+    res.json({ 
+      success: true, 
+      message: "Şifre sıfırlama bağlantısı simüle edildi.",
+      debug_token: token
+    });
+  });
+
+  app.post("/api/auth/reset-password", async (req, res) => {
+    const { token, newPassword } = req.body;
+    const userRes = await pool.query("SELECT * FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()", [token]);
+    const user = userRes.rows[0];
+
+    if (!user) {
+      return res.status(400).json({ error: "Geçersiz veya süresi dolmuş sıfırlama bağlantısı" });
+    }
+
+    const hashedPassword = bcrypt.hashSync(newPassword, 10);
+    await pool.query("UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE id = $2", [hashedPassword, user.id]);
+    res.json({ success: true });
   });
 
   // SuperAdmin: Manage Stores
