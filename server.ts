@@ -87,6 +87,18 @@ async function initDb() {
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (store_id) REFERENCES stores(id)
       );
+
+      CREATE TABLE IF NOT EXISTS leads (
+        id SERIAL PRIMARY KEY,
+        name TEXT NOT NULL,
+        store_name TEXT NOT NULL,
+        phone TEXT NOT NULL,
+        email TEXT,
+        status TEXT DEFAULT 'Yeni',
+        probability TEXT DEFAULT 'Ilık',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
     `);
 
     // Ensure columns exist
@@ -167,12 +179,54 @@ async function startServer() {
     res.json({ ...product, store });
   });
 
+  // Admin: Leads Management
+  app.get("/api/admin/leads", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    try {
+      const leads = await pool.query("SELECT * FROM leads ORDER BY created_at DESC");
+      res.json(leads.rows);
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.put("/api/admin/leads/:id", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    const { status, probability, notes } = req.body;
+    try {
+      await pool.query(
+        "UPDATE leads SET status = $1, probability = $2, notes = $3 WHERE id = $4",
+        [status, probability, notes, req.params.id]
+      );
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
+  app.delete("/api/admin/leads/:id", authenticate, async (req: any, res) => {
+    if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
+    try {
+      await pool.query("DELETE FROM leads WHERE id = $1", [req.params.id]);
+      res.json({ success: true });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
+  });
+
   // Public: Get Store Info (for branding on scan page load)
+  // Public: Demo Request
   app.post("/api/public/demo-request", async (req, res) => {
     const { name, storeName, phone, email } = req.body;
-    // In a real app, we would save this to a 'leads' table or send an email
-    console.log("New Demo Request:", { name, storeName, phone, email });
-    res.json({ success: true, message: "Talebiniz başarıyla alındı." });
+    try {
+      await pool.query(
+        "INSERT INTO leads (name, store_name, phone, email) VALUES ($1, $2, $3, $4)",
+        [name, storeName, phone, email]
+      );
+      res.json({ success: true, message: "Talebiniz başarıyla alındı." });
+    } catch (e: any) {
+      res.status(400).json({ error: e.message });
+    }
   });
 
   app.get("/api/public/store/:slug", async (req, res) => {
