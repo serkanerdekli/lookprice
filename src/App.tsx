@@ -1990,6 +1990,16 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
                       <option value="GBP">GBP</option>
                     </select>
                   </div>
+                  <div>
+                    <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Yeni Yönetici Şifresi (Opsiyonel)</label>
+                    <input 
+                      type="text" 
+                      className="w-full p-3 bg-gray-50 border rounded-xl" 
+                      value={editingStore.admin_password || ""} 
+                      onChange={e => setEditingStore({...editingStore, admin_password: e.target.value})} 
+                      placeholder="Değiştirmek için yeni şifre girin"
+                    />
+                  </div>
                 </div>
                 <div className="md:col-span-2 flex space-x-3 mt-4">
                   <button type="submit" className="flex-1 bg-indigo-600 text-white py-3 rounded-xl font-bold">Güncelle</button>
