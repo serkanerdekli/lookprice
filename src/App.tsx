@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useParams, useLocation } from "react-router-dom";
 import { 
   BarChart3, 
   ChevronRight, 
@@ -27,7 +27,11 @@ import {
   Zap,
   ZapOff,
   Keyboard,
-  Lock
+  Lock,
+  Play,
+  Phone,
+  Mail,
+  MessageCircle
 } from "lucide-react";
 import { 
   LineChart, 
@@ -350,6 +354,35 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
 
 const LandingPage = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [demoForm, setDemoForm] = useState({ name: "", storeName: "", phone: "", email: "" });
+  const [demoStatus, setDemoStatus] = useState({ type: "", text: "" });
+
+  useEffect(() => {
+    if (location.state?.openDemo) {
+      setShowDemoModal(true);
+      // Clear state to prevent reopening on refresh
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
+
+  const handleDemoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setDemoStatus({ type: "loading", text: "Gönderiliyor..." });
+    const res = await api.post("/api/public/demo-request", demoForm);
+    if (res.success) {
+      setDemoStatus({ type: "success", text: "Talebiniz alındı! En kısa sürede sizinle iletişime geçeceğiz." });
+      setDemoForm({ name: "", storeName: "", phone: "", email: "" });
+      setTimeout(() => {
+        setShowDemoModal(false);
+        setDemoStatus({ type: "", text: "" });
+      }, 3000);
+    } else {
+      setDemoStatus({ type: "error", text: "Bir hata oluştu. Lütfen tekrar deneyin." });
+    }
+  };
   
   const references = [
     { name: "Migros", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Migros_logo.svg/1200px-Migros_logo.svg.png" },
@@ -386,15 +419,16 @@ const LandingPage = () => {
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <button 
-                  onClick={() => navigate("/login")}
+                  onClick={() => setShowDemoModal(true)}
                   className="px-8 py-4 bg-white text-indigo-600 rounded-2xl font-bold text-lg shadow-xl hover:bg-indigo-50 transition-all transform hover:-translate-y-1"
                 >
-                  Hemen Başlayın
+                  Ücretsiz Demo Talebi
                 </button>
                 <button 
-                  className="px-8 py-4 bg-indigo-500 text-white border border-indigo-400 rounded-2xl font-bold text-lg hover:bg-indigo-400 transition-all"
+                  onClick={() => setShowVideoModal(true)}
+                  className="px-8 py-4 bg-indigo-500 text-white border border-indigo-400 rounded-2xl font-bold text-lg hover:bg-indigo-400 transition-all flex items-center justify-center"
                 >
-                  Demo İzleyin
+                  <Play className="h-5 w-5 mr-2" /> Demo İzleyin
                 </button>
               </div>
             </motion.div>
@@ -487,19 +521,142 @@ const LandingPage = () => {
       </section>
 
       {/* Footer */}
-      <footer className="bg-gray-900 py-12 text-gray-400">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="flex justify-center mb-6">
-            <Logo size={32} className="text-white" />
+      <footer className="bg-gray-900 py-16 text-gray-400">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
+            <div className="text-center md:text-left">
+              <div className="flex justify-center md:justify-start mb-6">
+                <Logo size={40} className="text-white" />
+                <span className="ml-2 text-2xl font-bold text-white">Look<span className="text-indigo-500">Price</span></span>
+              </div>
+              <p className="max-w-xs mx-auto md:mx-0">
+                Mağazanızın dijital dönüşüm ortağı. QR kod ile akıllı fiyatlandırma çözümleri.
+              </p>
+            </div>
+            <div className="text-center">
+              <h4 className="text-white font-bold mb-6">İletişim</h4>
+              <ul className="space-y-4">
+                <li className="flex items-center justify-center">
+                  <Phone className="h-4 w-4 mr-2 text-indigo-500" />
+                  <a href="tel:+905488902309" className="hover:text-white transition-colors">+90 548 890 23 09</a>
+                </li>
+                <li className="flex items-center justify-center">
+                  <MessageCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                  <a href="https://wa.me/905488902309" target="_blank" className="hover:text-white transition-colors">WhatsApp Destek</a>
+                </li>
+                <li className="flex items-center justify-center">
+                  <Mail className="h-4 w-4 mr-2 text-indigo-500" />
+                  <a href="mailto:lookprice-me@gmail.com" className="hover:text-white transition-colors">lookprice-me@gmail.com</a>
+                </li>
+              </ul>
+            </div>
+            <div className="text-center md:text-right">
+              <h4 className="text-white font-bold mb-6">Hızlı Menü</h4>
+              <ul className="space-y-4">
+                <li><button onClick={() => navigate("/login")} className="hover:text-white transition-colors">Giriş Yap</button></li>
+                <li><button onClick={() => setShowDemoModal(true)} className="hover:text-white transition-colors">Demo Talebi</button></li>
+                <li><a href="#" className="hover:text-white transition-colors">Gizlilik Politikası</a></li>
+              </ul>
+            </div>
           </div>
-          <p className="mb-4">© 2026 LookPrice. Tüm hakları saklıdır.</p>
-          <div className="flex justify-center space-x-6">
-            <a href="#" className="hover:text-white transition-colors">Kullanım Şartları</a>
-            <a href="#" className="hover:text-white transition-colors">Gizlilik Politikası</a>
-            <a href="#" className="hover:text-white transition-colors">İletişim</a>
+          <div className="border-t border-gray-800 pt-8 text-center">
+            <p>© 2026 LookPrice. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </footer>
+
+      {/* Demo Request Modal */}
+      <AnimatePresence>
+        {showDemoModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[60] p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="bg-white rounded-[2rem] shadow-2xl max-w-md w-full p-8 relative"
+            >
+              <button onClick={() => setShowDemoModal(false)} className="absolute top-6 right-6 text-gray-400 hover:text-gray-600"><X /></button>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Ücretsiz Demo Talebi</h2>
+              <p className="text-gray-500 mb-8">Bilgilerinizi bırakın, sizi arayalım ve LookPrice'ı anlatalım.</p>
+              
+              <form onSubmit={handleDemoSubmit} className="space-y-4">
+                {demoStatus.text && (
+                  <div className={`p-4 rounded-xl text-sm ${demoStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-indigo-50 text-indigo-700'}`}>
+                    {demoStatus.text}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Ad Soyad</label>
+                  <input 
+                    required 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    value={demoForm.name}
+                    onChange={e => setDemoForm({...demoForm, name: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Mağaza Adı</label>
+                  <input 
+                    required 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    value={demoForm.storeName}
+                    onChange={e => setDemoForm({...demoForm, storeName: e.target.value})}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Telefon</label>
+                  <input 
+                    required 
+                    type="tel"
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    value={demoForm.phone}
+                    onChange={e => setDemoForm({...demoForm, phone: e.target.value})}
+                    placeholder="+90"
+                  />
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={demoStatus.type === 'loading'}
+                  className="w-full bg-indigo-600 text-white py-4 rounded-xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all disabled:opacity-50"
+                >
+                  {demoStatus.type === 'loading' ? 'Gönderiliyor...' : 'Talebi Gönder'}
+                </button>
+              </form>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {showVideoModal && (
+          <div className="fixed inset-0 bg-black/90 backdrop-blur-md flex items-center justify-center z-[70] p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="max-w-5xl w-full aspect-video bg-black rounded-3xl overflow-hidden relative shadow-2xl"
+            >
+              <button 
+                onClick={() => setShowVideoModal(false)} 
+                className="absolute top-6 right-6 z-10 bg-white/10 hover:bg-white/20 p-2 rounded-full text-white backdrop-blur-md transition-all"
+              >
+                <X />
+              </button>
+              <div className="w-full h-full flex items-center justify-center text-white">
+                <video 
+                  autoPlay 
+                  controls 
+                  className="w-full h-full object-cover"
+                  src="https://assets.mixkit.co/videos/preview/mixkit-shopping-in-a-supermarket-34547-large.mp4"
+                >
+                  Tarayıcınız video etiketini desteklemiyor.
+                </video>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -750,6 +907,19 @@ const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }
           >
             Sign In
           </button>
+          
+          <div className="mt-6 text-center">
+            <p className="text-sm text-gray-500">
+              Henüz bir hesabınız yok mu?{" "}
+              <button 
+                type="button"
+                onClick={() => navigate("/", { state: { openDemo: true } })}
+                className="text-indigo-600 font-bold hover:underline"
+              >
+                Kayıt Olun
+              </button>
+            </p>
+          </div>
         </form>
       </motion.div>
     </div>
