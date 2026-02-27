@@ -644,14 +644,14 @@ const LandingPage = () => {
                 <X />
               </button>
               <div className="w-full h-full flex items-center justify-center text-white">
-                <video 
-                  autoPlay 
-                  controls 
-                  className="w-full h-full object-cover"
-                  src="https://assets.mixkit.co/videos/preview/mixkit-shopping-in-a-supermarket-34547-large.mp4"
-                >
-                  Tarayıcınız video etiketini desteklemiyor.
-                </video>
+                <iframe 
+                  className="w-full h-full"
+                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
+                  title="LookPrice Demo Video"
+                  frameBorder="0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
               </div>
             </motion.div>
           </div>
@@ -2049,11 +2049,14 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
 };
 
 const SuperAdminDashboard = ({ token }: { token: string }) => {
+  const [activeTab, setActiveTab] = useState<'stores' | 'leads'>('stores');
   const [stores, setStores] = useState<any[]>([]);
+  const [leads, setLeads] = useState<any[]>([]);
   const [selectedStoreIds, setSelectedStoreIds] = useState<number[]>([]);
   const [showAdd, setShowAdd] = useState(false);
   const [selectedStore, setSelectedStore] = useState<any>(null);
   const [editingStore, setEditingStore] = useState<any>(null);
+  const [editingLead, setEditingLead] = useState<any>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'expired'>('all');
   const [systemStats, setSystemStats] = useState<any>(null);
@@ -2073,6 +2076,7 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
   useEffect(() => {
     fetchStores();
     fetchSystemStats();
+    fetchLeads();
   }, []);
 
   const fetchStores = async () => {
@@ -2084,9 +2088,48 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
     }
   };
 
+  const fetchLeads = async () => {
+    const data = await api.get("/api/admin/leads", token);
+    if (Array.isArray(data)) {
+      setLeads(data);
+    } else {
+      setLeads([]);
+    }
+  };
+
   const fetchSystemStats = async () => {
     const data = await api.get("/api/admin/stats", token);
     setSystemStats(data);
+  };
+
+  const handleUpdateLead = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const res = await api.put(`/api/admin/leads/${editingLead.id}`, editingLead, token);
+    if (res.success) {
+      setEditingLead(null);
+      fetchLeads();
+    }
+  };
+
+  const handleDeleteLead = async (id: number) => {
+    if (window.confirm("Bu talebi silmek istediğinize emin misiniz?")) {
+      const res = await api.delete(`/api/admin/leads/${id}`, token);
+      if (res.success) fetchLeads();
+    }
+  };
+
+  const leadStatuses = [
+    "Yeni", "Görüşmede", "Aksiyon Bekliyor", "Ödeme bekliyor", "Dosya Bekliyor", "Dosya Transfer bekliyor", "Tamamlandı"
+  ];
+
+  const probabilities = [
+    { label: "Soğuk", color: "bg-blue-100 text-blue-700" },
+    { label: "Ilık", color: "bg-orange-100 text-orange-700" },
+    { label: "Sıcak", color: "bg-red-100 text-red-700" }
+  ];
+
+  const getProbabilityColor = (prob: string) => {
+    return probabilities.find(p => p.label === prob)?.color || "bg-gray-100 text-gray-700";
   };
 
   const filteredStores = Array.isArray(stores) ? stores.filter(s => {
@@ -2159,100 +2202,254 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Store Management</h1>
-          <p className="text-gray-500">Manage all stores and their subscriptions</p>
+          <h1 className="text-2xl font-bold text-gray-900">Sistem Yönetimi</h1>
+          <div className="flex space-x-4 mt-2">
+            <button 
+              onClick={() => setActiveTab('stores')}
+              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'stores' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Mağazalar
+            </button>
+            <button 
+              onClick={() => setActiveTab('leads')}
+              className={`pb-2 px-1 text-sm font-bold transition-all relative ${activeTab === 'leads' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+            >
+              Müşteri Talepleri
+              {leads.filter(l => l.status === 'Yeni').length > 0 && (
+                <span className="absolute -top-1 -right-2 bg-red-500 text-white text-[10px] w-4 h-4 rounded-full flex items-center justify-center">
+                  {leads.filter(l => l.status === 'Yeni').length}
+                </span>
+              )}
+            </button>
+          </div>
         </div>
         <div className="flex space-x-2">
-          {selectedStoreIds.length > 0 && (
-            <div className="flex items-center bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100 animate-in fade-in slide-in-from-right-4">
-              <span className="text-sm font-bold text-indigo-700 mr-4">{selectedStoreIds.length} Seçildi</span>
-              <div className="flex space-x-1">
-                <button onClick={() => handleBulkSubscription(30)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+30 Gün</button>
-                <button onClick={() => handleBulkSubscription(90)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+90 Gün</button>
-                <button onClick={() => handleBulkSubscription(365)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+1 Yıl</button>
+          {activeTab === 'stores' && (
+            <>
+              {selectedStoreIds.length > 0 && (
+                <div className="flex items-center bg-indigo-50 px-4 py-2 rounded-lg border border-indigo-100 animate-in fade-in slide-in-from-right-4">
+                  <span className="text-sm font-bold text-indigo-700 mr-4">{selectedStoreIds.length} Seçildi</span>
+                  <div className="flex space-x-1">
+                    <button onClick={() => handleBulkSubscription(30)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+30 Gün</button>
+                    <button onClick={() => handleBulkSubscription(90)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+90 Gün</button>
+                    <button onClick={() => handleBulkSubscription(365)} className="text-xs bg-indigo-600 text-white px-2 py-1 rounded hover:bg-indigo-700">+1 Yıl</button>
+                  </div>
+                </div>
+              )}
+              <button 
+                onClick={() => setShowAdd(true)}
+                className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
+              >
+                <Plus className="h-4 w-4 mr-2" /> Yeni Mağaza Kaydı
+              </button>
+            </>
+          )}
+        </div>
+      </div>
+
+      {activeTab === 'stores' ? (
+        <>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
+              <div className="bg-indigo-50 p-4 rounded-xl mr-4">
+                <Logo size={24} className="text-indigo-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Toplam Mağaza</p>
+                <h3 className="text-3xl font-bold text-gray-900">{systemStats?.totalStores || 0}</h3>
               </div>
             </div>
-          )}
-          <button 
-            onClick={() => setShowAdd(true)}
-            className="flex items-center bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition-colors"
-          >
-            <Store className="h-4 w-4 mr-2" /> Register New Store
-          </button>
-        </div>
-      </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
+              <div className="bg-green-50 p-4 rounded-xl mr-4">
+                <CheckCircle2 className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Aktif Abonelik</p>
+                <h3 className="text-3xl font-bold text-gray-900">{systemStats?.activeStores || 0}</h3>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
+              <div className="bg-orange-50 p-4 rounded-xl mr-4">
+                <TrendingUp className="h-6 w-6 text-orange-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Toplam Tarama</p>
+                <h3 className="text-3xl font-bold text-gray-900">{systemStats?.totalScans || 0}</h3>
+              </div>
+            </div>
+            <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
+              <div className="bg-blue-50 p-4 rounded-xl mr-4">
+                <Clock className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm text-gray-500 font-medium">Son 24 Saat</p>
+                <h3 className="text-3xl font-bold text-gray-900">{systemStats?.scansLast24h || 0}</h3>
+              </div>
+            </div>
+          </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
-          <div className="bg-indigo-50 p-4 rounded-xl mr-4">
-            <Logo size={24} className="text-indigo-600" />
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Mağaza ismi veya slug ile ara..." 
+                className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 transition-all"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            <div className="flex bg-gray-100 p-1 rounded-xl">
+              <button 
+                onClick={() => setFilterStatus('all')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Tümü
+              </button>
+              <button 
+                onClick={() => setFilterStatus('active')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'active' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Aktif
+              </button>
+              <button 
+                onClick={() => setFilterStatus('expired')}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'expired' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+              >
+                Süresi Dolan
+              </button>
+            </div>
           </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Toplam Mağaza</p>
-            <h3 className="text-3xl font-bold text-gray-900">{systemStats?.totalStores || 0}</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
-          <div className="bg-green-50 p-4 rounded-xl mr-4">
-            <CheckCircle2 className="h-6 w-6 text-green-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Aktif Abonelik</p>
-            <h3 className="text-3xl font-bold text-gray-900">{systemStats?.activeStores || 0}</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
-          <div className="bg-orange-50 p-4 rounded-xl mr-4">
-            <TrendingUp className="h-6 w-6 text-orange-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Toplam Tarama</p>
-            <h3 className="text-3xl font-bold text-gray-900">{systemStats?.totalScans || 0}</h3>
-          </div>
-        </div>
-        <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm flex items-center">
-          <div className="bg-blue-50 p-4 rounded-xl mr-4">
-            <Clock className="h-6 w-6 text-blue-600" />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 font-medium">Son 24 Saat</p>
-            <h3 className="text-3xl font-bold text-gray-900">{systemStats?.scansLast24h || 0}</h3>
-          </div>
-        </div>
-      </div>
 
-      <div className="flex flex-col md:flex-row gap-4 mb-8">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-          <input 
-            type="text" 
-            placeholder="Mağaza ismi veya slug ile ara..." 
-            className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 rounded-2xl shadow-sm focus:ring-2 focus:ring-indigo-500 transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredStores.map(store => (
+              <motion.div 
+                key={store.id}
+                whileHover={{ y: -5 }}
+                className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="flex justify-between items-start mb-4">
+                  <div className="flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedStoreIds.includes(store.id)}
+                      onChange={() => toggleStoreSelection(store.id)}
+                      className="mr-3 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    <div className="bg-indigo-50 p-3 rounded-xl">
+                      <Logo size={24} className="text-indigo-600" />
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <span className={`px-2 py-1 rounded text-xs font-bold ${new Date(store.subscription_end) > new Date() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                      {new Date(store.subscription_end) > new Date() ? 'Active' : 'Expired'}
+                    </span>
+                    <button 
+                      onClick={() => setEditingStore(store)}
+                      className="mt-2 text-xs text-indigo-600 hover:underline flex items-center"
+                    >
+                      <Edit2 className="h-3 w-3 mr-1" /> Düzenle
+                    </button>
+                  </div>
+                </div>
+                <h3 className="text-lg font-bold text-gray-900">{store.name}</h3>
+                <p className="text-sm text-gray-500 mb-4">/{store.slug}</p>
+                <div className="flex items-center text-sm text-gray-600 mb-2">
+                  <ChevronRight className="h-4 w-4 mr-1 text-indigo-400" />
+                  Ends: {new Date(store.subscription_end).toLocaleDateString()}
+                </div>
+                <div className="mt-6 grid grid-cols-2 gap-2">
+                  <button 
+                    onClick={() => setSelectedStore(store)}
+                    className="bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 flex items-center justify-center"
+                  >
+                    <Search className="h-4 w-4 mr-1" /> Detaylar
+                  </button>
+                  <button 
+                    onClick={() => {
+                      window.open(`${window.location.origin}/dashboard/${store.id}`, '_blank');
+                    }}
+                    className="bg-indigo-50 text-indigo-700 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 flex items-center justify-center"
+                  >
+                    <LogOut className="h-4 w-4 mr-1 rotate-180" /> Sisteme Git
+                  </button>
+                  <button 
+                    onClick={() => {
+                      window.open(`${window.location.origin}/scan/${store.slug}`, '_blank');
+                    }}
+                    className="col-span-2 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center justify-center"
+                  >
+                    <Scan className="h-4 w-4 mr-1" /> Scan Sayfası (Müşteri)
+                  </button>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </>
+      ) : (
+        <div className="space-y-6">
+          <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Müşteri / Mağaza</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İletişim</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Statü</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Olasılık</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Tarih</th>
+                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İşlem</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {leads.map(lead => (
+                  <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-gray-900">{lead.name}</div>
+                      <div className="text-sm text-gray-500">{lead.store_name}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="text-sm text-gray-900">{lead.phone}</div>
+                      <div className="text-sm text-gray-500">{lead.email}</div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold">
+                        {lead.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getProbabilityColor(lead.probability)}`}>
+                        {lead.probability}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-500">
+                      {new Date(lead.created_at).toLocaleDateString()}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex space-x-2">
+                        <button 
+                          onClick={() => setEditingLead(lead)}
+                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                        >
+                          <Edit2 className="h-4 w-4" />
+                        </button>
+                        <button 
+                          onClick={() => handleDeleteLead(lead.id)}
+                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+            {leads.length === 0 && (
+              <div className="p-12 text-center text-gray-400">Henüz bir talep bulunmuyor.</div>
+            )}
+          </div>
         </div>
-        <div className="flex bg-gray-100 p-1 rounded-xl">
-          <button 
-            onClick={() => setFilterStatus('all')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'all' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Tümü
-          </button>
-          <button 
-            onClick={() => setFilterStatus('active')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'active' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Aktif
-          </button>
-          <button 
-            onClick={() => setFilterStatus('expired')}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filterStatus === 'expired' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            Süresi Dolan
-          </button>
-        </div>
-      </div>
+      )}
 
       <AnimatePresence>
         {editingStore && (
