@@ -26,7 +26,8 @@ import {
   Image as ImageIcon,
   Zap,
   ZapOff,
-  Keyboard
+  Keyboard,
+  Lock
 } from "lucide-react";
 import { 
   LineChart, 
@@ -330,6 +331,175 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
 
 // --- Pages ---
 
+const ForgotPasswordPage = () => {
+  const [email, setEmail] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    setError("");
+    setMessage("");
+    const res = await api.post("/api/auth/forgot-password", { email });
+    setLoading(false);
+    if (res.success) {
+      setMessage(res.message);
+      // For demo purposes, we might want to show the token if it's returned
+      if (res.debug_token) {
+        console.log("Debug Token:", res.debug_token);
+      }
+    } else {
+      setError(res.error || "İşlem başarısız");
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100"
+      >
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Logo size={64} className="text-indigo-600" />
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900">Şifremi Unuttum</h2>
+          <p className="mt-2 text-gray-600">E-posta adresinizi girin, size şifre sıfırlama bağlantısı gönderelim.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center text-sm">
+              <AlertCircle className="h-4 w-4 mr-2" /> {error}
+            </div>
+          )}
+          {message && (
+            <div className="bg-green-50 text-green-600 p-3 rounded-lg flex items-center text-sm">
+              <CheckCircle2 className="h-4 w-4 mr-2" /> {message}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">E-posta Adresi</label>
+            <input 
+              type="email" 
+              required 
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              placeholder="admin@example.com"
+            />
+          </div>
+          <button 
+            type="submit"
+            disabled={loading}
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50"
+          >
+            {loading ? "Gönderiliyor..." : "Sıfırlama Bağlantısı Gönder"}
+          </button>
+          <div className="text-center">
+            <button 
+              type="button"
+              onClick={() => navigate("/login")}
+              className="text-sm text-indigo-600 hover:underline font-medium"
+            >
+              Giriş Sayfasına Dön
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
+const ResetPasswordPage = () => {
+  const { token } = useParams();
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [message, setMessage] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      return setError("Şifreler eşleşmiyor");
+    }
+    setLoading(true);
+    setError("");
+    const res = await api.post("/api/auth/reset-password", { token, newPassword: password });
+    setLoading(false);
+    if (res.success) {
+      setMessage("Şifreniz başarıyla güncellendi. Giriş yapabilirsiniz.");
+      setTimeout(() => navigate("/login"), 3000);
+    } else {
+      setError(res.error || "İşlem başarısız");
+    }
+  };
+
+  return (
+    <div className="min-h-[calc(100vh-64px)] flex items-center justify-center bg-gray-50 px-4">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md w-full bg-white p-8 rounded-2xl shadow-xl border border-gray-100"
+      >
+        <div className="text-center mb-8">
+          <div className="flex justify-center mb-4">
+            <Logo size={64} className="text-indigo-600" />
+          </div>
+          <h2 className="text-3xl font-extrabold text-gray-900">Yeni Şifre Oluştur</h2>
+          <p className="mt-2 text-gray-600">Lütfen yeni şifrenizi belirleyin.</p>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {error && (
+            <div className="bg-red-50 text-red-600 p-3 rounded-lg flex items-center text-sm">
+              <AlertCircle className="h-4 w-4 mr-2" /> {error}
+            </div>
+          )}
+          {message && (
+            <div className="bg-green-50 text-green-600 p-3 rounded-lg flex items-center text-sm">
+              <CheckCircle2 className="h-4 w-4 mr-2" /> {message}
+            </div>
+          )}
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Yeni Şifre</label>
+            <input 
+              type="password" 
+              required 
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Şifre Tekrar</label>
+            <input 
+              type="password" 
+              required 
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+              placeholder="••••••••"
+            />
+          </div>
+          <button 
+            type="submit"
+            disabled={loading || !!message}
+            className="w-full bg-indigo-600 text-white py-3 rounded-xl font-semibold hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200 disabled:opacity-50"
+          >
+            {loading ? "Güncelleniyor..." : "Şifreyi Güncelle"}
+          </button>
+        </form>
+      </motion.div>
+    </div>
+  );
+};
+
 const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -389,6 +559,15 @@ const LoginPage = ({ onLogin }: { onLogin: (token: string, user: User) => void }
               className="mt-1 block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
               placeholder="••••••••"
             />
+            <div className="mt-2 text-right">
+              <button 
+                type="button"
+                onClick={() => navigate("/forgot-password")}
+                className="text-sm text-indigo-600 hover:underline font-medium"
+              >
+                Şifremi Unuttum?
+              </button>
+            </div>
           </div>
           <button 
             type="submit"
@@ -592,7 +771,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const { storeId: paramStoreId } = useParams();
   const effectiveStoreId = user.role === 'superadmin' ? paramStoreId : user.store_id;
 
-  const [activeTab, setActiveTab] = useState<'products' | 'analytics' | 'branding' | 'users'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'analytics' | 'branding' | 'users' | 'settings'>('products');
   const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [analytics, setAnalytics] = useState<any>(null);
@@ -614,6 +793,8 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
   const [headers, setHeaders] = useState<string[]>([]);
   const [newProduct, setNewProduct] = useState({ barcode: "", name: "", price: "", description: "", currency: "TRY" });
   const [storeSlug, setStoreSlug] = useState("");
+  const [passwordData, setPasswordData] = useState({ currentPassword: "", newPassword: "", confirmPassword: "" });
+  const [passwordMessage, setPasswordMessage] = useState({ type: "", text: "" });
 
   const isViewer = user.role === 'viewer';
   const isEditor = user.role === 'editor';
@@ -697,6 +878,23 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
     const res = await api.post("/api/store/branding", { ...branding, storeId: effectiveStoreId }, token);
     if (res.success) {
       alert("Görünüm ayarları kaydedildi!");
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      return setPasswordMessage({ type: "error", text: "Yeni şifreler eşleşmiyor" });
+    }
+    const res = await api.post("/api/auth/change-password", { 
+      currentPassword: passwordData.currentPassword, 
+      newPassword: passwordData.newPassword 
+    }, token);
+    if (res.success) {
+      setPasswordMessage({ type: "success", text: "Şifreniz başarıyla güncellendi" });
+      setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" });
+    } else {
+      setPasswordMessage({ type: "error", text: res.error || "Şifre güncellenemedi" });
     }
   };
 
@@ -874,6 +1072,12 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
             <Users className="h-4 w-4 mr-2" /> Ekip
           </button>
         )}
+        <button 
+          onClick={() => setActiveTab('settings')}
+          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+        >
+          <Settings className="h-4 w-4 mr-2" /> Ayarlar
+        </button>
       </div>
 
       <AnimatePresence>
@@ -1440,6 +1644,61 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
           </div>
         </div>
       )}
+
+      {activeTab === 'settings' && (
+        <div className="max-w-2xl bg-white p-8 rounded-2xl border border-gray-100 shadow-sm">
+          <h3 className="text-lg font-bold mb-6 flex items-center">
+            <Lock className="h-5 w-5 mr-2 text-indigo-600" /> Hesap ve Şifre Ayarları
+          </h3>
+          
+          <form onSubmit={handleChangePassword} className="space-y-6">
+            {passwordMessage.text && (
+              <div className={`p-4 rounded-xl flex items-center text-sm ${passwordMessage.type === 'success' ? 'bg-green-50 text-green-600' : 'bg-red-50 text-red-600'}`}>
+                {passwordMessage.type === 'success' ? <CheckCircle2 className="h-4 w-4 mr-2" /> : <AlertCircle className="h-4 w-4 mr-2" />}
+                {passwordMessage.text}
+              </div>
+            )}
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Mevcut Şifre</label>
+              <input 
+                type="password" 
+                required 
+                className="w-full p-3 bg-gray-50 border rounded-xl" 
+                value={passwordData.currentPassword} 
+                onChange={e => setPasswordData({...passwordData, currentPassword: e.target.value})} 
+              />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Yeni Şifre</label>
+                <input 
+                  type="password" 
+                  required 
+                  className="w-full p-3 bg-gray-50 border rounded-xl" 
+                  value={passwordData.newPassword} 
+                  onChange={e => setPasswordData({...passwordData, newPassword: e.target.value})} 
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Yeni Şifre (Tekrar)</label>
+                <input 
+                  type="password" 
+                  required 
+                  className="w-full p-3 bg-gray-50 border rounded-xl" 
+                  value={passwordData.confirmPassword} 
+                  onChange={e => setPasswordData({...passwordData, confirmPassword: e.target.value})} 
+                />
+              </div>
+            </div>
+            
+            <button type="submit" className="w-full bg-indigo-600 text-white py-3 rounded-xl font-bold shadow-lg shadow-indigo-100">
+              Şifreyi Güncelle
+            </button>
+          </form>
+        </div>
+      )}
     </div>
   );
 };
@@ -1990,6 +2249,18 @@ export default function App() {
         <Routes>
           {/* Public Routes */}
           <Route path="/scan/:slug" element={<CustomerScanPage />} />
+          <Route path="/forgot-password" element={
+            <>
+              <Navbar user={null} onLogout={handleLogout} />
+              <ForgotPasswordPage />
+            </>
+          } />
+          <Route path="/reset-password/:token" element={
+            <>
+              <Navbar user={null} onLogout={handleLogout} />
+              <ResetPasswordPage />
+            </>
+          } />
           
           {/* Auth Routes */}
           <Route path="/login" element={
