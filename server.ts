@@ -42,6 +42,7 @@ async function initDb() {
         logo_url TEXT,
         primary_color TEXT DEFAULT '#4f46e5',
         default_currency TEXT DEFAULT 'TRY',
+        background_image_url TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
 
@@ -86,12 +87,15 @@ async function initDb() {
       );
     `);
 
-    // Ensure default_currency column exists
+    // Ensure columns exist
     await client.query(`
       DO $$ 
       BEGIN 
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='default_currency') THEN
           ALTER TABLE stores ADD COLUMN default_currency TEXT DEFAULT 'TRY';
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='stores' AND column_name='background_image_url') THEN
+          ALTER TABLE stores ADD COLUMN background_image_url TEXT;
         END IF;
       END $$;
     `);
@@ -135,7 +139,7 @@ async function startServer() {
   // Public: Get Product by Barcode and Store Slug
   app.get("/api/public/scan/:slug/:barcode", async (req, res) => {
     const { slug, barcode } = req.params;
-    const storeRes = await pool.query("SELECT id, name, logo_url, primary_color, default_currency FROM stores WHERE slug = $1", [slug]);
+    const storeRes = await pool.query("SELECT id, name, logo_url, primary_color, default_currency, background_image_url FROM stores WHERE slug = $1", [slug]);
     const store = storeRes.rows[0];
     if (!store) return res.status(404).json({ error: "Store not found" });
 
@@ -151,7 +155,7 @@ async function startServer() {
 
   // Public: Get Store Info (for branding on scan page load)
   app.get("/api/public/store/:slug", async (req, res) => {
-    const storeRes = await pool.query("SELECT name, logo_url, primary_color, default_currency FROM stores WHERE slug = $1", [req.params.slug]);
+    const storeRes = await pool.query("SELECT name, logo_url, primary_color, default_currency, background_image_url FROM stores WHERE slug = $1", [req.params.slug]);
     const store = storeRes.rows[0];
     if (!store) return res.status(404).json({ error: "Store not found" });
     res.json(store);
@@ -268,8 +272,8 @@ async function startServer() {
     const storeId = req.user.role === "superadmin" ? req.body.storeId : req.user.store_id;
     if (!storeId) return res.status(400).json({ error: "Store ID required" });
 
-    const { logo_url, primary_color, default_currency } = req.body;
-    await pool.query("UPDATE stores SET logo_url = $1, primary_color = $2, default_currency = $3 WHERE id = $4", [logo_url, primary_color, default_currency || 'TRY', storeId]);
+    const { logo_url, primary_color, default_currency, background_image_url } = req.body;
+    await pool.query("UPDATE stores SET logo_url = $1, primary_color = $2, default_currency = $3, background_image_url = $4 WHERE id = $5", [logo_url, primary_color, default_currency || 'TRY', background_image_url, storeId]);
     res.json({ success: true });
   });
 
