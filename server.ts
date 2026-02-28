@@ -217,11 +217,11 @@ async function startServer() {
   // Public: Get Store Info (for branding on scan page load)
   // Public: Demo Request
   app.post("/api/public/demo-request", async (req, res) => {
-    const { name, storeName, phone, email } = req.body;
+    const { name, storeName, phone, email, notes } = req.body;
     try {
       await pool.query(
-        "INSERT INTO leads (name, store_name, phone, email) VALUES ($1, $2, $3, $4)",
-        [name, storeName, phone, email]
+        "INSERT INTO leads (name, store_name, phone, email, notes) VALUES ($1, $2, $3, $4, $5)",
+        [name, storeName, phone, email, notes]
       );
       res.json({ success: true, message: "Talebiniz başarıyla alındı." });
     } catch (e: any) {
