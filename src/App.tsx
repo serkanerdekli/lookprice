@@ -205,18 +205,27 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
     setError(null);
     try {
       const config: any = {
-        fps: 25, // 30 FPS bazı cihazlarda sorun çıkarabilir, 25 daha güvenli
+        fps: 25,
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const width = viewfinderWidth * 0.8;
-          const height = viewfinderHeight * 0.4;
+          // iOS'ta koordinat kaymasını önlemek için değerleri tam eşliyoruz
+          // Genişlik ve yüksekliği biraz daha daraltarak kenar hatalarını önlüyoruz
+          const width = Math.floor(viewfinderWidth * 0.80);
+          const height = Math.floor(viewfinderHeight * 0.35);
           return { width, height };
         },
         aspectRatio: 1.0,
         disableFlip: true,
+        // iOS Safari için video kısıtlamaları
+        videoConstraints: {
+          facingMode: "environment",
+          aspectRatio: 1.0
+        }
       };
 
-      // İlk başlatma için en basit ve uyumlu kısıtlamalar
-      const constraints = { facingMode: "environment" };
+      // iOS uyumluluğu için en sade kısıtlamalarla başla
+      const constraints = { 
+        facingMode: "environment"
+      };
 
       await instance.start(
         constraints,
@@ -316,7 +325,7 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
   };
 
   return (
-    <div className="relative w-full max-w-md mx-auto aspect-square overflow-hidden rounded-3xl border-4 border-white/20 shadow-2xl bg-black">
+    <div className="relative w-full max-w-md mx-auto aspect-square overflow-hidden rounded-3xl border-4 border-white/20 shadow-2xl bg-black isolation-isolate">
       <div id="reader" className="w-full h-full [&_video]:object-cover" />
       
       {error && (
@@ -346,7 +355,7 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
           
           {/* Scanning line animation */}
           <motion.div 
-            animate={{ top: ["0%", "100%"] }}
+            animate={{ top: ["2%", "98%"] }}
             transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
             className="absolute left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] z-10"
           />
