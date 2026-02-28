@@ -357,7 +357,7 @@ const LandingPage = () => {
   const location = useLocation();
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
-  const [demoForm, setDemoForm] = useState({ name: "", storeName: "", phone: "", email: "" });
+  const [demoForm, setDemoForm] = useState({ name: "", storeName: "", phone: "", email: "", notes: "" });
   const [demoStatus, setDemoStatus] = useState({ type: "", text: "" });
 
   useEffect(() => {
@@ -374,7 +374,7 @@ const LandingPage = () => {
     const res = await api.post("/api/public/demo-request", demoForm);
     if (res.success) {
       setDemoStatus({ type: "success", text: "Talebiniz alındı! En kısa sürede sizinle iletişime geçeceğiz." });
-      setDemoForm({ name: "", storeName: "", phone: "", email: "" });
+      setDemoForm({ name: "", storeName: "", phone: "", email: "", notes: "" });
       setTimeout(() => {
         setShowDemoModal(false);
         setDemoStatus({ type: "", text: "" });
@@ -614,6 +614,16 @@ const LandingPage = () => {
                     placeholder="+90"
                   />
                 </div>
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Notlarınız (Opsiyonel)</label>
+                  <textarea 
+                    className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" 
+                    rows={3}
+                    value={demoForm.notes}
+                    onChange={e => setDemoForm({...demoForm, notes: e.target.value})}
+                    placeholder="Eklemek istediğiniz bir not var mı?"
+                  />
+                </div>
                 <button 
                   type="submit" 
                   disabled={demoStatus.type === 'loading'}
@@ -646,7 +656,7 @@ const LandingPage = () => {
               <div className="w-full h-full flex items-center justify-center text-white">
                 <iframe 
                   className="w-full h-full"
-                  src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" 
+                  src="https://www.youtube.com/embed/9zJzDUso6Uk?autoplay=1" 
                   title="LookPrice Demo Video"
                   frameBorder="0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
@@ -2452,6 +2462,70 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
       )}
 
       <AnimatePresence>
+        {editingLead && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <motion.div 
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white p-8 rounded-3xl max-w-md w-full relative"
+            >
+              <button onClick={() => setEditingLead(null)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><X /></button>
+              <h2 className="text-2xl font-bold mb-6">Talebi Yönet</h2>
+              
+              <form onSubmit={handleUpdateLead} className="space-y-6">
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-3">Süreç Statüsü</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {leadStatuses.map(status => (
+                      <button
+                        key={status}
+                        type="button"
+                        onClick={() => setEditingLead({...editingLead, status})}
+                        className={`px-3 py-2 rounded-xl text-xs font-bold transition-all ${editingLead.status === status ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-200' : 'bg-gray-50 text-gray-500 hover:bg-gray-100'}`}
+                      >
+                        {status}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-3">Satış Olasılığı</label>
+                  <div className="flex space-x-2">
+                    {probabilities.map(prob => (
+                      <button
+                        key={prob.label}
+                        type="button"
+                        onClick={() => setEditingLead({...editingLead, probability: prob.label})}
+                        className={`flex-1 px-4 py-3 rounded-xl text-xs font-bold transition-all ${editingLead.probability === prob.label ? 'ring-2 ring-indigo-600 ring-offset-2 ' + prob.color : 'bg-gray-50 text-gray-500'}`}
+                      >
+                        {prob.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-400 uppercase mb-1">Görüşme Notları</label>
+                  <textarea 
+                    className="w-full p-4 bg-gray-50 border border-gray-100 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all" 
+                    rows={4}
+                    value={editingLead.notes || ""}
+                    onChange={e => setEditingLead({...editingLead, notes: e.target.value})}
+                    placeholder="Görüşme detaylarını buraya not alabilirsiniz..."
+                  />
+                </div>
+
+                <div className="flex space-x-3">
+                  <button type="submit" className="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-bold shadow-lg shadow-indigo-200 hover:bg-indigo-700 transition-all">Güncelle</button>
+                  <button type="button" onClick={() => setEditingLead(null)} className="flex-1 bg-gray-100 text-gray-900 py-4 rounded-2xl font-bold hover:bg-gray-200 transition-all">Kapat</button>
+                </div>
+              </form>
+            </motion.div>
+          </div>
+        )}
+
         {editingStore && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <motion.div 
@@ -2691,76 +2765,9 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
           </form>
         </motion.div>
       )}
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {filteredStores.map(store => (
-          <motion.div 
-            key={store.id}
-            whileHover={{ y: -5 }}
-            className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm hover:shadow-md transition-all"
-          >
-            <div className="flex justify-between items-start mb-4">
-              <div className="flex items-center">
-                <input 
-                  type="checkbox" 
-                  checked={selectedStoreIds.includes(store.id)}
-                  onChange={() => toggleStoreSelection(store.id)}
-                  className="mr-3 h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                />
-                <div className="bg-indigo-50 p-3 rounded-xl">
-                  <Logo size={24} className="text-indigo-600" />
-                </div>
-              </div>
-              <div className="flex flex-col items-end">
-                <span className={`px-2 py-1 rounded text-xs font-bold ${new Date(store.subscription_end) > new Date() ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                  {new Date(store.subscription_end) > new Date() ? 'Active' : 'Expired'}
-                </span>
-                <button 
-                  onClick={() => setEditingStore(store)}
-                  className="mt-2 text-xs text-indigo-600 hover:underline flex items-center"
-                >
-                  <Edit2 className="h-3 w-3 mr-1" /> Düzenle
-                </button>
-              </div>
-            </div>
-            <h3 className="text-lg font-bold text-gray-900">{store.name}</h3>
-            <p className="text-sm text-gray-500 mb-4">/{store.slug}</p>
-            <div className="flex items-center text-sm text-gray-600 mb-2">
-              <ChevronRight className="h-4 w-4 mr-1 text-indigo-400" />
-              Ends: {new Date(store.subscription_end).toLocaleDateString()}
-            </div>
-            <div className="mt-6 grid grid-cols-2 gap-2">
-              <button 
-                onClick={() => setSelectedStore(store)}
-                className="bg-gray-50 text-gray-700 py-2 rounded-lg text-sm font-medium hover:bg-gray-100 flex items-center justify-center"
-              >
-                <Search className="h-4 w-4 mr-1" /> Detaylar
-              </button>
-              <button 
-                onClick={() => {
-                  window.open(`${window.location.origin}/dashboard/${store.id}`, '_blank');
-                }}
-                className="bg-indigo-50 text-indigo-700 py-2 rounded-lg text-sm font-medium hover:bg-indigo-100 flex items-center justify-center"
-              >
-                <LogOut className="h-4 w-4 mr-1 rotate-180" /> Sisteme Git
-              </button>
-              <button 
-                onClick={() => {
-                  window.open(`${window.location.origin}/scan/${store.slug}`, '_blank');
-                }}
-                className="col-span-2 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 flex items-center justify-center"
-              >
-                <Scan className="h-4 w-4 mr-1" /> Scan Sayfası (Müşteri)
-              </button>
-            </div>
-          </motion.div>
-        ))}
-      </div>
     </div>
   );
 };
-
-// --- Main App ---
 
 export default function App() {
   const [token, setToken] = useState<string | null>(() => {
