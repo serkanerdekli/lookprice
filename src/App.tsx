@@ -205,28 +205,18 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
     setError(null);
     try {
       const config: any = {
-        fps: 30, // Daha akıcı tarama için FPS artırıldı
+        fps: 25, // 30 FPS bazı cihazlarda sorun çıkarabilir, 25 daha güvenli
         qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          // Barkodlar genellikle geniş olduğu için dikdörtgen bir alan daha iyi sonuç verir
           const width = viewfinderWidth * 0.8;
           const height = viewfinderHeight * 0.4;
           return { width, height };
         },
         aspectRatio: 1.0,
         disableFlip: true,
-        experimentalFeatures: {
-          useBarCodeDetectorIfSupported: true // Tarayıcı desteği varsa donanımsal hızlandırma kullan
-        }
       };
 
-      const constraints: any = { 
-        facingMode: "environment",
-        advanced: [
-          { focusMode: "continuous" }, // Sürekli odaklama dene
-          { whiteBalanceMode: "continuous" },
-          { exposureMode: "continuous" }
-        ]
-      };
+      // İlk başlatma için en basit ve uyumlu kısıtlamalar
+      const constraints = { facingMode: "environment" };
 
       await instance.start(
         constraints,
@@ -242,17 +232,31 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
         () => {} // Kare hatalarını görmezden gel
       );
 
-      // Fener (Torch) kontrolü - Ayrı bir try-catch içinde, ana akışı bozmasın
+      // Başarıyla başladıktan sonra gelişmiş özellikleri dene
       try {
         const track = (instance as any).getRunningTrack();
-        if (track && typeof track.getCapabilities === 'function') {
-          const capabilities = track.getCapabilities();
-          if (capabilities && capabilities.torch) {
-            setHasTorch(true);
+        if (track) {
+          // Fener kontrolü
+          if (typeof track.getCapabilities === 'function') {
+            const capabilities = track.getCapabilities();
+            if (capabilities && capabilities.torch) {
+              setHasTorch(true);
+            }
+          }
+          
+          // Gelişmiş odaklama ve pozlama ayarlarını uygula
+          if (typeof track.applyConstraints === 'function') {
+            await track.applyConstraints({
+              advanced: [
+                { focusMode: "continuous" },
+                { whiteBalanceMode: "continuous" },
+                { exposureMode: "continuous" }
+              ]
+            } as any).catch((e: any) => console.warn("Gelişmiş kısıtlamalar uygulanamadı:", e));
           }
         }
-      } catch (torchErr) {
-        console.warn("Fener kontrolü desteklenmiyor:", torchErr);
+      } catch (advErr) {
+        console.warn("Gelişmiş özellikler ayarlanırken hata:", advErr);
       }
       
     } catch (err: any) {
@@ -266,10 +270,9 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
           await instance.start(
             backCam ? backCam.id : cameras[0].id,
             { 
-              fps: 30, 
+              fps: 25, 
               qrbox: (w: number, h: number) => ({ width: w * 0.8, height: h * 0.4 }),
-              experimentalFeatures: { useBarCodeDetectorIfSupported: true }
-            } as any,
+            },
             (text) => onResult(text),
             () => {}
           );
