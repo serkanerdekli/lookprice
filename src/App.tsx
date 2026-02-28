@@ -204,16 +204,29 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
     setIsStarting(true);
     setError(null);
     try {
-      const config = {
-        fps: 15,
-        qrbox: { width: 250, height: 250 },
+      const config: any = {
+        fps: 30, // Daha akıcı tarama için FPS artırıldı
+        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
+          // Barkodlar genellikle geniş olduğu için dikdörtgen bir alan daha iyi sonuç verir
+          const width = viewfinderWidth * 0.8;
+          const height = viewfinderHeight * 0.4;
+          return { width, height };
+        },
         aspectRatio: 1.0,
         disableFlip: true,
+        experimentalFeatures: {
+          useBarCodeDetectorIfSupported: true // Tarayıcı desteği varsa donanımsal hızlandırma kullan
+        }
       };
 
-      // En uyumlu yöntem: Direkt facingMode objesi ile başlat
-      // Obje kirliliğini önlemek için temiz bir kopya oluşturuyoruz
-      const constraints = { facingMode: "environment" };
+      const constraints: any = { 
+        facingMode: "environment",
+        advanced: [
+          { focusMode: "continuous" }, // Sürekli odaklama dene
+          { whiteBalanceMode: "continuous" },
+          { exposureMode: "continuous" }
+        ]
+      };
 
       await instance.start(
         constraints,
@@ -252,7 +265,11 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
           const backCam = cameras.find(c => c.label.toLowerCase().includes('back') || c.label.toLowerCase().includes('arka'));
           await instance.start(
             backCam ? backCam.id : cameras[0].id,
-            { fps: 15, qrbox: 250 },
+            { 
+              fps: 30, 
+              qrbox: (w: number, h: number) => ({ width: w * 0.8, height: h * 0.4 }),
+              experimentalFeatures: { useBarCodeDetectorIfSupported: true }
+            } as any,
             (text) => onResult(text),
             () => {}
           );
@@ -317,7 +334,7 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
 
       {/* Viewfinder Overlay */}
       <div className="absolute inset-0 pointer-events-none flex flex-col items-center justify-center">
-        <div className="w-[85%] h-[40%] border-2 border-white/20 rounded-2xl relative">
+        <div className="w-[85%] h-[40%] border-2 border-white/20 rounded-2xl relative overflow-hidden">
           {/* Corner accents */}
           <div className="absolute -top-1 -left-1 w-12 h-12 border-t-4 border-l-4 border-indigo-500 rounded-tl-2xl" />
           <div className="absolute -top-1 -right-1 w-12 h-12 border-t-4 border-r-4 border-indigo-500 rounded-tr-2xl" />
@@ -326,16 +343,24 @@ const Scanner = ({ onResult }: { onResult: (decodedText: string) => void }) => {
           
           {/* Scanning line animation */}
           <motion.div 
-            animate={{ top: ["10%", "90%"] }}
-            transition={{ duration: 1.2, repeat: Infinity, ease: "easeInOut" }}
-            className="absolute left-4 right-4 h-1 bg-indigo-500 shadow-[0_0_25px_rgba(99,102,241,1)] rounded-full"
+            animate={{ top: ["0%", "100%"] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+            className="absolute left-0 right-0 h-0.5 bg-indigo-500 shadow-[0_0_15px_rgba(99,102,241,1)] z-10"
           />
+
+          {/* Glass effect inside box */}
+          <div className="absolute inset-0 bg-indigo-500/5 backdrop-blur-[1px]" />
         </div>
         
-        <div className="mt-12 px-5 py-2.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/20 shadow-xl">
-          <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase flex items-center">
-            <span className="w-2 h-2 bg-red-500 rounded-full mr-3 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
-            Barkod Hizalayın
+        <div className="mt-8 flex flex-col items-center space-y-3">
+          <div className="px-5 py-2.5 bg-black/60 backdrop-blur-xl rounded-full border border-white/20 shadow-xl">
+            <p className="text-white text-[10px] font-black tracking-[0.2em] uppercase flex items-center">
+              <span className="w-2 h-2 bg-red-500 rounded-full mr-3 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.8)]" />
+              Barkod Hizalayın
+            </p>
+          </div>
+          <p className="text-white/60 text-[10px] font-medium text-center max-w-[200px]">
+            Netlik için cihazı yavaşça yaklaştırıp uzaklaştırın
           </p>
         </div>
       </div>
