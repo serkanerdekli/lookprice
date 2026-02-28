@@ -31,7 +31,8 @@ import {
   Play,
   Phone,
   Mail,
-  MessageCircle
+  MessageCircle,
+  Instagram
 } from "lucide-react";
 import { 
   LineChart, 
@@ -548,7 +549,22 @@ const LandingPage = () => {
                   <Mail className="h-4 w-4 mr-2 text-indigo-500" />
                   <a href="mailto:lookprice.me@gmail.com" className="hover:text-white transition-colors">lookprice.me@gmail.com</a>
                 </li>
+                <li className="flex items-center justify-center">
+                  <Instagram className="h-4 w-4 mr-2 text-pink-500" />
+                  <a href="https://www.instagram.com/lookprice.me/" target="_blank" className="hover:text-white transition-colors">lookprice.me</a>
+                </li>
               </ul>
+            </div>
+            <div className="text-center md:text-right flex flex-col items-center md:items-end">
+              <h4 className="text-white font-bold mb-6">Instagram QR</h4>
+              <div className="bg-white p-2 rounded-2xl w-32 h-32 flex items-center justify-center shadow-lg">
+                <QRCodeSVG 
+                  value="https://www.instagram.com/lookprice.me/" 
+                  size={110}
+                  level="H"
+                  includeMargin={false}
+                />
+              </div>
             </div>
             <div className="text-center md:text-right">
               <h4 className="text-white font-bold mb-6">Hızlı Menü</h4>
