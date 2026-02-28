@@ -524,51 +524,51 @@ const LandingPage = () => {
       {/* Footer */}
       <footer className="bg-gray-900 py-16 text-gray-400">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 mb-12">
-            <div className="text-center md:text-left">
-              <div className="flex justify-center md:justify-start mb-6">
-                <Logo size={40} className="text-white" />
-                <span className="ml-2 text-2xl font-bold text-white">Look<span className="text-indigo-500">Price</span></span>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-12 mb-12">
+            <div className="text-center sm:text-left">
+              <div className="flex justify-center sm:justify-start mb-6">
+                <Logo size={32} className="text-white" />
+                <span className="ml-2 text-xl font-bold text-white">Look<span className="text-indigo-500">Price</span></span>
               </div>
-              <p className="max-w-xs mx-auto md:mx-0">
+              <p className="max-w-xs mx-auto sm:mx-0 text-sm leading-relaxed">
                 Mağazanızın dijital dönüşüm ortağı. QR kod ile akıllı fiyatlandırma çözümleri.
               </p>
             </div>
-            <div className="text-center">
-              <h4 className="text-white font-bold mb-6">İletişim</h4>
-              <ul className="space-y-4">
-                <li className="flex items-center justify-center">
-                  <Phone className="h-4 w-4 mr-2 text-indigo-500" />
+            <div className="text-center sm:text-left">
+              <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-wider">İletişim</h4>
+              <ul className="space-y-3 text-sm">
+                <li className="flex items-center justify-center sm:justify-start">
+                  <Phone className="h-4 w-4 mr-3 text-indigo-500 shrink-0" />
                   <a href="tel:+905488902309" className="hover:text-white transition-colors">+90 548 890 23 09</a>
                 </li>
-                <li className="flex items-center justify-center">
-                  <MessageCircle className="h-4 w-4 mr-2 text-emerald-500" />
+                <li className="flex items-center justify-center sm:justify-start">
+                  <MessageCircle className="h-4 w-4 mr-3 text-emerald-500 shrink-0" />
                   <a href="https://wa.me/905488902309" target="_blank" className="hover:text-white transition-colors">WhatsApp Destek</a>
                 </li>
-                <li className="flex items-center justify-center">
-                  <Mail className="h-4 w-4 mr-2 text-indigo-500" />
+                <li className="flex items-center justify-center sm:justify-start">
+                  <Mail className="h-4 w-4 mr-3 text-indigo-500 shrink-0" />
                   <a href="mailto:lookprice.me@gmail.com" className="hover:text-white transition-colors">lookprice.me@gmail.com</a>
                 </li>
-                <li className="flex items-center justify-center">
-                  <Instagram className="h-4 w-4 mr-2 text-pink-500" />
+                <li className="flex items-center justify-center sm:justify-start">
+                  <Instagram className="h-4 w-4 mr-3 text-pink-500 shrink-0" />
                   <a href="https://www.instagram.com/lookprice.me/" target="_blank" className="hover:text-white transition-colors">lookprice.me</a>
                 </li>
               </ul>
             </div>
-            <div className="text-center md:text-right flex flex-col items-center md:items-end">
-              <h4 className="text-white font-bold mb-6">Instagram QR</h4>
-              <div className="bg-white p-2 rounded-2xl w-32 h-32 flex items-center justify-center shadow-lg">
+            <div className="text-center sm:text-left lg:text-center flex flex-col items-center sm:items-start lg:items-center">
+              <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-wider">Instagram QR</h4>
+              <div className="bg-white p-2 rounded-2xl w-28 h-28 flex items-center justify-center shadow-lg">
                 <QRCodeSVG 
                   value="https://www.instagram.com/lookprice.me/" 
-                  size={110}
+                  size={96}
                   level="H"
                   includeMargin={false}
                 />
               </div>
             </div>
-            <div className="text-center md:text-right">
-              <h4 className="text-white font-bold mb-6">Hızlı Menü</h4>
-              <ul className="space-y-4">
+            <div className="text-center sm:text-left lg:text-right">
+              <h4 className="text-white font-bold mb-6 text-sm uppercase tracking-wider">Hızlı Menü</h4>
+              <ul className="space-y-3 text-sm">
                 <li><button onClick={() => navigate("/login")} className="hover:text-white transition-colors">Giriş Yap</button></li>
                 <li><button onClick={() => setShowDemoModal(true)} className="hover:text-white transition-colors">Demo Talebi</button></li>
                 <li><a href="#" className="hover:text-white transition-colors">Gizlilik Politikası</a></li>
@@ -576,7 +576,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="border-t border-gray-800 pt-8 text-center">
-            <p>© 2026 LookPrice. Tüm hakları saklıdır.</p>
+            <p className="text-xs">© 2026 LookPrice. Tüm hakları saklıdır.</p>
           </div>
         </div>
       </footer>
@@ -1414,23 +1414,23 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
         </div>
       </div>
 
-      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-8 w-fit">
+      <div className="flex space-x-1 bg-gray-100 p-1 rounded-xl mb-8 overflow-x-auto max-w-full no-scrollbar whitespace-nowrap">
         <button 
           onClick={() => setActiveTab('products')}
-          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${activeTab === 'products' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Logo size={16} className="mr-2" /> Ürünler
         </button>
         <button 
           onClick={() => setActiveTab('analytics')}
-          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${activeTab === 'analytics' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <BarChart3 className="h-4 w-4 mr-2" /> Analizler
         </button>
         {!isViewer && (
           <button 
             onClick={() => setActiveTab('branding')}
-            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'branding' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${activeTab === 'branding' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <Palette className="h-4 w-4 mr-2" /> Görünüm
           </button>
@@ -1438,14 +1438,14 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
         {isAdmin && (
           <button 
             onClick={() => setActiveTab('users')}
-            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+            className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${activeTab === 'users' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
           >
             <Users className="h-4 w-4 mr-2" /> Ekip
           </button>
         )}
         <button 
           onClick={() => setActiveTab('settings')}
-          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'settings' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          className={`flex items-center px-4 py-2 rounded-lg text-sm font-medium transition-all shrink-0 ${activeTab === 'settings' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
         >
           <Settings className="h-4 w-4 mr-2" /> Ayarlar
         </button>
@@ -1621,57 +1621,59 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
           )}
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barkod</th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
-                  <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {products.map((p) => (
-                  <tr key={p.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="h-10 w-10 flex-shrink-0 bg-indigo-50 rounded-lg flex items-center justify-center">
-                          <Package className="h-5 w-5 text-indigo-600" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{p.name}</div>
-                          <div className="text-sm text-gray-500 truncate max-w-xs">{p.description}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{p.barcode}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
-                        {p.price.toLocaleString('tr-TR', { style: 'currency', currency: p.currency })}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                      {!isViewer && (
-                        <>
-                          <button 
-                            onClick={() => setEditingProduct(p)}
-                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                          >
-                            Düzenle
-                          </button>
-                          <button 
-                            onClick={() => handleDeleteProduct(p.id)}
-                            className="text-red-600 hover:text-red-900"
-                          >
-                            Sil
-                          </button>
-                        </>
-                      )}
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barkod</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {products.map((p) => (
+                    <tr key={p.id} className="hover:bg-gray-50 transition-colors">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="h-10 w-10 flex-shrink-0 bg-indigo-50 rounded-lg flex items-center justify-center">
+                            <Package className="h-5 w-5 text-indigo-600" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">{p.name}</div>
+                            <div className="text-sm text-gray-500 truncate max-w-xs">{p.description}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 font-mono">{p.barcode}</td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                          {p.price.toLocaleString('tr-TR', { style: 'currency', currency: p.currency })}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        {!isViewer && (
+                          <>
+                            <button 
+                              onClick={() => setEditingProduct(p)}
+                              className="text-indigo-600 hover:text-indigo-900 mr-4"
+                            >
+                              Düzenle
+                            </button>
+                            <button 
+                              onClick={() => handleDeleteProduct(p.id)}
+                              className="text-red-600 hover:text-red-900"
+                            >
+                              Sil
+                            </button>
+                          </>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {products.length === 0 && !loading && (
               <div className="text-center py-12">
                 <Package className="h-12 w-12 text-gray-300 mx-auto mb-4" />
@@ -1718,12 +1720,12 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
             </div>
           </div>
 
-          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm">
+          <div className="bg-white p-6 rounded-2xl border border-gray-100 shadow-sm min-h-[400px] flex flex-col">
             <h3 className="text-lg font-bold mb-6 flex items-center">
               <BarChart3 className="h-5 w-5 mr-2 text-indigo-600" /> Günlük Tarama Trendi
             </h3>
-            <div className="h-80 w-full">
-              <ResponsiveContainer width="100%" height="100%">
+            <div className="flex-1 min-h-[300px] w-full">
+              <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                 <AreaChart data={analytics?.scansByDay || []}>
                   <defs>
                     <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
@@ -2226,19 +2228,19 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-8 flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Sistem Yönetimi</h1>
-          <div className="flex space-x-4 mt-2">
+          <div className="flex space-x-4 mt-2 overflow-x-auto no-scrollbar whitespace-nowrap pb-1">
             <button 
               onClick={() => setActiveTab('stores')}
-              className={`pb-2 px-1 text-sm font-bold transition-all ${activeTab === 'stores' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`pb-2 px-1 text-sm font-bold transition-all shrink-0 ${activeTab === 'stores' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
             >
               Mağazalar
             </button>
             <button 
               onClick={() => setActiveTab('leads')}
-              className={`pb-2 px-1 text-sm font-bold transition-all relative ${activeTab === 'leads' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
+              className={`pb-2 px-1 text-sm font-bold transition-all relative shrink-0 ${activeTab === 'leads' ? 'text-indigo-600 border-b-2 border-indigo-600' : 'text-gray-400 hover:text-gray-600'}`}
             >
               Müşteri Talepleri
               {leads.filter(l => l.status === 'Yeni').length > 0 && (
@@ -2415,61 +2417,63 @@ const SuperAdminDashboard = ({ token }: { token: string }) => {
       ) : (
         <div className="space-y-6">
           <div className="bg-white rounded-3xl border border-gray-100 shadow-sm overflow-hidden">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50 border-b border-gray-100">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Müşteri / Mağaza</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İletişim</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Statü</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Olasılık</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Tarih</th>
-                  <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İşlem</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-50">
-                {leads.map(lead => (
-                  <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-gray-900">{lead.name}</div>
-                      <div className="text-sm text-gray-500">{lead.store_name}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-900">{lead.phone}</div>
-                      <div className="text-sm text-gray-500">{lead.email}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold">
-                        {lead.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${getProbabilityColor(lead.probability)}`}>
-                        {lead.probability}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-gray-500">
-                      {new Date(lead.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex space-x-2">
-                        <button 
-                          onClick={() => setEditingLead(lead)}
-                          className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        >
-                          <Edit2 className="h-4 w-4" />
-                        </button>
-                        <button 
-                          onClick={() => handleDeleteLead(lead.id)}
-                          className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-gray-50 border-b border-gray-100">
+                  <tr>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Müşteri / Mağaza</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İletişim</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Statü</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Olasılık</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">Tarih</th>
+                    <th className="px-6 py-4 text-xs font-bold text-gray-400 uppercase">İşlem</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {leads.map(lead => (
+                    <tr key={lead.id} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-gray-900">{lead.name}</div>
+                        <div className="text-sm text-gray-500">{lead.store_name}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="text-sm text-gray-900">{lead.phone}</div>
+                        <div className="text-sm text-gray-500">{lead.email}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-indigo-50 text-indigo-700 rounded-full text-xs font-bold">
+                          {lead.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 rounded-full text-xs font-bold ${getProbabilityColor(lead.probability)}`}>
+                          {lead.probability}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-500">
+                        {new Date(lead.created_at).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex space-x-2">
+                          <button 
+                            onClick={() => setEditingLead(lead)}
+                            className="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </button>
+                          <button 
+                            onClick={() => handleDeleteLead(lead.id)}
+                            className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
             {leads.length === 0 && (
               <div className="p-12 text-center text-gray-400">Henüz bir talep bulunmuyor.</div>
             )}
