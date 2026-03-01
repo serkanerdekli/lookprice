@@ -623,10 +623,10 @@ const LandingPage = () => {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {[
-              "https://images.unsplash.com/photo-1604719312563-8912e9223c6a?auto=format&fit=crop&q=80&w=400",
-              "https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&q=80&w=400",
-              "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400",
-              "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=400"
+              "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&q=80&w=600",
+              "https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=600",
+              "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600",
+              "https://images.unsplash.com/photo-1556740734-7f95826913b8?auto=format&fit=crop&q=80&w=600"
             ].map((img, idx) => (
               <motion.div
                 key={idx}
