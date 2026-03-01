@@ -626,7 +626,7 @@ const LandingPage = () => {
               "https://images.unsplash.com/photo-1567401893414-76b7b1e5a7a5?auto=format&fit=crop&q=80&w=600",
               "https://images.unsplash.com/photo-1556742044-3c52d6e88c62?auto=format&fit=crop&q=80&w=600",
               "https://images.unsplash.com/photo-1441986300917-64674bd600d8?auto=format&fit=crop&q=80&w=600",
-              "https://images.unsplash.com/photo-1556740734-7f95826913b8?auto=format&fit=crop&q=80&w=600"
+              "https://cdnuploads.aa.com.tr/uploads/Contents/2022/02/27/thumbs_b_c_73e64dcea2633243d7063444fae23662.jpg?auto=format&fit=crop&q=80&w=600"
             ].map((img, idx) => (
               <motion.div
                 key={idx}
@@ -1364,6 +1364,10 @@ const CustomerScanPage = () => {
                     {product.description}
                   </div>
                 )}
+                <div className="flex items-center justify-center space-x-2 text-[10px] text-gray-400 uppercase tracking-widest pt-2">
+                  <Clock className="h-3 w-3" />
+                  <span>Son Güncelleme: {new Date(product.updated_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                </div>
                 <button 
                   onClick={() => { setProduct(null); setScanning(true); setError(""); }}
                   className="w-full text-white py-4 rounded-xl font-bold transition-all shadow-lg active:scale-95"
@@ -1892,6 +1896,7 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ürün</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Barkod</th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fiyat</th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Son Güncelleme</th>
                     <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">İşlemler</th>
                   </tr>
                 </thead>
@@ -1914,6 +1919,9 @@ const StoreDashboard = ({ token, user }: { token: string, user: User }) => {
                         <span className="px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full bg-green-100 text-green-800">
                           {p.price.toLocaleString('tr-TR', { style: 'currency', currency: p.currency })}
                         </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        {p.updated_at ? new Date(p.updated_at).toLocaleDateString('tr-TR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         {!isViewer && (
