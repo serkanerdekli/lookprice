@@ -303,10 +303,10 @@ async function startServer() {
   app.get("/api/admin/stats", authenticate, async (req: any, res) => {
     if (req.user.role !== "superadmin") return res.status(403).json({ error: "Forbidden" });
     
-    const totalStores = (await pool.query("SELECT COUNT(*) as count FROM stores")).rows[0].count;
-    const activeStores = (await pool.query("SELECT COUNT(*) as count FROM stores WHERE subscription_end > CURRENT_DATE")).rows[0].count;
-    const totalScans = (await pool.query("SELECT COUNT(*) as count FROM scan_logs")).rows[0].count;
-    const scansLast24h = (await pool.query("SELECT COUNT(*) as count FROM scan_logs WHERE created_at > NOW() - INTERVAL '1 day'")).rows[0].count;
+    const totalStores = (await pool.query("SELECT COUNT(*)::INT as count FROM stores")).rows[0].count;
+    const activeStores = (await pool.query("SELECT COUNT(*)::INT as count FROM stores WHERE subscription_end > CURRENT_DATE")).rows[0].count;
+    const totalScans = (await pool.query("SELECT COUNT(*)::INT as count FROM scan_logs")).rows[0].count;
+    const scansLast24h = (await pool.query("SELECT COUNT(*)::INT as count FROM scan_logs WHERE created_at > NOW() - INTERVAL '1 day'")).rows[0].count;
 
     res.json({
       totalStores: parseInt(totalStores),
@@ -420,23 +420,23 @@ async function startServer() {
     const storeId = req.user.role === "superadmin" ? req.query.storeId : req.user.store_id;
     if (!storeId) return res.status(400).json({ error: "Store ID required" });
 
-    const totalScans = (await pool.query("SELECT COUNT(*) as count FROM scan_logs WHERE store_id = $1", [storeId])).rows[0];
+    const totalScans = (await pool.query("SELECT COUNT(*)::INT as count FROM scan_logs WHERE store_id = $1", [storeId])).rows[0];
     const scansByDay = await pool.query(`
-      SELECT d.date, COALESCE(s.count, 0) as count FROM (
+      SELECT TO_CHAR(d.date, 'DD/MM') as date, COALESCE(s.count, 0)::INT as count FROM (
         SELECT (CURRENT_DATE - (n || ' days')::INTERVAL)::DATE as date
         FROM generate_series(0, 6) n
       ) d
       LEFT JOIN (
-        SELECT DATE(created_at) as scan_date, COUNT(*) as count 
+        SELECT DATE(created_at) as scan_date, COUNT(*)::INT as count 
         FROM scan_logs 
         WHERE store_id = $1 
         GROUP BY DATE(created_at)
       ) s ON d.date = s.scan_date
-      ORDER BY date ASC
+      ORDER BY d.date ASC
     `, [storeId]);
 
     const topProducts = await pool.query(`
-      SELECT p.name, p.barcode, COUNT(l.id) as count 
+      SELECT p.name, p.barcode, COUNT(l.id)::INT as count 
       FROM scan_logs l 
       JOIN products p ON l.product_id = p.id 
       WHERE l.store_id = $1 
