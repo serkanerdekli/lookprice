@@ -54,6 +54,7 @@ async function initDb() {
         price REAL NOT NULL,
         currency TEXT DEFAULT 'TRY',
         description TEXT,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (store_id) REFERENCES stores(id),
         UNIQUE(store_id, barcode)
       );
@@ -122,6 +123,9 @@ async function initDb() {
         END IF;
         IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='users' AND column_name='reset_token_expiry') THEN
           ALTER TABLE users ADD COLUMN reset_token_expiry TIMESTAMP;
+        END IF;
+        IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='products' AND column_name='updated_at') THEN
+          ALTER TABLE products ADD COLUMN updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP;
         END IF;
       END $$;
     `);
@@ -512,10 +516,10 @@ async function startServer() {
     if (!barcode || !name || !price) return res.status(400).json({ error: "Missing fields" });
     try {
       await pool.query(`
-        INSERT INTO products (store_id, barcode, name, price, currency, description) 
-        VALUES ($1, $2, $3, $4, $5, $6)
+        INSERT INTO products (store_id, barcode, name, price, currency, description, updated_at) 
+        VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
         ON CONFLICT (store_id, barcode) 
-        DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, currency = EXCLUDED.currency, description = EXCLUDED.description
+        DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, currency = EXCLUDED.currency, description = EXCLUDED.description, updated_at = CURRENT_TIMESTAMP
       `, [storeId, String(barcode), name, parseFloat(price), currency || 'TRY', description || '']);
       res.json({ success: true });
     } catch (e: any) {
@@ -530,7 +534,7 @@ async function startServer() {
     const { id } = req.params;
     const { barcode, name, price, currency, description } = req.body;
     try {
-      await pool.query("UPDATE products SET barcode = $1, name = $2, price = $3, currency = $4, description = $5 WHERE id = $6 AND store_id = $7", 
+      await pool.query("UPDATE products SET barcode = $1, name = $2, price = $3, currency = $4, description = $5, updated_at = CURRENT_TIMESTAMP WHERE id = $6 AND store_id = $7", 
         [String(barcode), name, parseFloat(price), currency || 'TRY', description || '', id, storeId]);
       res.json({ success: true });
     } catch (e: any) {
@@ -594,10 +598,10 @@ async function startServer() {
         if (barcode && name && !isNaN(price)) {
           const currency = item[mapping.currency] || mapping.currency || 'TRY';
           await pool.query(`
-            INSERT INTO products (store_id, barcode, name, price, currency, description) 
-            VALUES ($1, $2, $3, $4, $5, $6)
+            INSERT INTO products (store_id, barcode, name, price, currency, description, updated_at) 
+            VALUES ($1, $2, $3, $4, $5, $6, CURRENT_TIMESTAMP)
             ON CONFLICT (store_id, barcode) 
-            DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, currency = EXCLUDED.currency, description = EXCLUDED.description
+            DO UPDATE SET name = EXCLUDED.name, price = EXCLUDED.price, currency = EXCLUDED.currency, description = EXCLUDED.description, updated_at = CURRENT_TIMESTAMP
           `, [
             storeId,
             barcode,
