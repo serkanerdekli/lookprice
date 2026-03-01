@@ -395,6 +395,26 @@ const LandingPage = () => {
   const location = useLocation();
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showVideoModal, setShowVideoModal] = useState(false);
+  const [liveActivity, setLiveActivity] = useState<{name: string, location: string} | null>(null);
+
+  useEffect(() => {
+    const activities = [
+      { name: "Bir müşteri barkod okuttu", location: "İstanbul, Kadıköy" },
+      { name: "Yeni bir mağaza katıldı", location: "Ankara, Çankaya" },
+      { name: "Fiyat güncellemesi yapıldı", location: "İzmir, Alsancak" },
+      { name: "Bir müşteri fiyat sorguladı", location: "Antalya, Muratpaşa" }
+    ];
+
+    const interval = setInterval(() => {
+      if (Math.random() > 0.7) {
+        const activity = activities[Math.floor(Math.random() * activities.length)];
+        setLiveActivity(activity);
+        setTimeout(() => setLiveActivity(null), 5000);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
   const [demoForm, setDemoForm] = useState({ name: "", storeName: "", phone: "", email: "", notes: "" });
   const [demoStatus, setDemoStatus] = useState({ type: "", text: "" });
 
@@ -423,11 +443,11 @@ const LandingPage = () => {
   };
   
   const references = [
-    { name: "Migros", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1a/Migros_logo.svg/1200px-Migros_logo.svg.png" },
-    { name: "CarrefourSA", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/c/c5/CarrefourSA_logo.svg/2560px-CarrefourSA_logo.svg.png" },
-    { name: "BİM", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Bim_logo.svg/1200px-Bim_logo.svg.png" },
-    { name: "A101", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/5/51/A101_logo.svg/1200px-A101_logo.svg.png" },
-    { name: "Şok Market", logo: "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b9/%C5%9Eok_Market_logo.svg/1200px-%C5%9Eok_Market_logo.svg.png" }
+    { name: "Güneş Plaza", logo: "https://scontent.fecn3-1.fna.fbcdn.net/v/t39.30808-1/365310681_122103211940009695_6924289774686929491_n.jpg?stp=dst-jpg_s200x200_tt6&_nc_cat=111&ccb=1-7&_nc_sid=2d3e12&_nc_ohc=vftvhw0ffugQ7kNvwEDx-BU&_nc_oc=Adly1F1pAvus0pzX2ttYGoz26b6Ndgzq3EzkPEI-Li6DxqTC0p0dpV7LgbrKtqIfqWI&_nc_zt=24&_nc_ht=scontent.fecn3-1.fna&_nc_gid=PxaDxdSAZhjcGfNJgwwOlg&_nc_ss=8&oh=00_Afve0fadiLFZMroBxnZqoJysdB0NKs33yhrWa7YTaTlX4A&oe=69A9D210" },
+    { name: "Cyprus Outdoor Shop", logo: "https://cyprusoutdoorshop.com/wp-content/uploads/2025/10/cropped-COS-logo-yatay-1.png" },
+    { name: "GAP", logo: "https://11d46382.cdn.akinoncloud.com/static_omnishop/gapzero164/img/gap_black.svg" },
+    { name: "BAMIX", logo: "https://bamixhome.com/wp-content/uploads/2025/07/cropped-logo-scaled-1-1024x292.png" },
+    { name: "Deniz Medikal", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSZT8PDqi7qCfNatYPUTG7KdsWaRPmK2ZGdfg&s" }
   ];
 
   return (
@@ -516,9 +536,136 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* Interactive Demo Section */}
+      <section className="py-24 bg-white overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <h2 className="text-4xl font-black text-gray-900 mb-6 leading-tight">
+                Görmek İnanmaktır.<br />
+                <span className="text-indigo-600">Hemen Deneyin.</span>
+              </h2>
+              <p className="text-lg text-gray-600 mb-8 leading-relaxed">
+                Müşterilerinizin yaşayacağı deneyimi saniyeler içinde test edin. Telefonunuzu hazırlayın ve yandaki QR kodu taratın.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start">
+                  <div className="bg-indigo-100 p-2 rounded-lg mr-4 mt-1">
+                    <CheckCircle2 className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Uygulama Gerekmez</h4>
+                    <p className="text-sm text-gray-500">Sadece kamera ile çalışır.</p>
+                  </div>
+                </div>
+                <div className="flex items-start">
+                  <div className="bg-indigo-100 p-2 rounded-lg mr-4 mt-1">
+                    <CheckCircle2 className="h-5 w-5 text-indigo-600" />
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-gray-900">Işık Hızında</h4>
+                    <p className="text-sm text-gray-500">0.2 saniyede barkod tanıma.</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              className="relative flex justify-center"
+            >
+              <div className="absolute inset-0 bg-indigo-600/5 rounded-[3rem] -rotate-3 scale-105"></div>
+              <div className="relative bg-white p-8 rounded-[3rem] shadow-2xl border border-gray-100 flex flex-col items-center">
+                <div className="bg-gray-50 p-6 rounded-3xl mb-6">
+                  <QRCodeSVG 
+                    value={`${window.location.origin}/scan/demo-store`} 
+                    size={200}
+                    level="H"
+                    includeMargin={false}
+                    className="shadow-inner"
+                  />
+                </div>
+                <div className="text-center">
+                  <p className="text-sm font-black text-indigo-600 uppercase tracking-widest mb-2">Demo Mağaza</p>
+                  <p className="text-xs text-gray-400">Telefonunuzun kamerasıyla taratın</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Instagram Feed Section */}
+      <section className="py-24 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col md:flex-row justify-between items-end mb-12 gap-6">
+            <div>
+              <div className="flex items-center text-pink-600 mb-4">
+                <Instagram className="h-6 w-6 mr-2" />
+                <span className="font-bold tracking-widest uppercase text-sm">Instagram'da Biz</span>
+              </div>
+              <h2 className="text-3xl font-bold text-gray-900">Mağazalardan Canlı Kareler</h2>
+            </div>
+            <a 
+              href="https://www.instagram.com/lookprice.me/" 
+              target="_blank"
+              className="px-6 py-3 bg-white border border-gray-200 rounded-2xl font-bold text-gray-900 hover:bg-gray-50 transition-all flex items-center shadow-sm"
+            >
+              Tümünü Gör <ChevronRight className="ml-2 h-4 w-4" />
+            </a>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            {[
+              "https://images.unsplash.com/photo-1604719312563-8912e9223c6a?auto=format&fit=crop&q=80&w=400",
+              "https://images.unsplash.com/photo-1534452203293-494d7ddbf7e0?auto=format&fit=crop&q=80&w=400",
+              "https://images.unsplash.com/photo-1542838132-92c53300491e?auto=format&fit=crop&q=80&w=400",
+              "https://images.unsplash.com/photo-1578916171728-46686eac8d58?auto=format&fit=crop&q=80&w=400"
+            ].map((img, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ scale: 1.02 }}
+                className="aspect-square rounded-3xl overflow-hidden relative group cursor-pointer"
+              >
+                <img 
+                  src={img} 
+                  alt={`Instagram Post ${idx + 1}`} 
+                  className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                  <Instagram className="text-white h-8 w-8" />
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* References Section */}
       <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-20">
+            <div className="bg-gray-50 p-8 rounded-[2rem] text-center">
+              <div className="text-4xl font-black text-indigo-600 mb-2">1.2M+</div>
+              <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Toplam Tarama</p>
+            </div>
+            <div className="bg-gray-50 p-8 rounded-[2rem] text-center border-2 border-indigo-100">
+              <div className="text-4xl font-black text-indigo-600 mb-2">850+</div>
+              <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Aktif Mağaza</p>
+            </div>
+            <div className="bg-gray-50 p-8 rounded-[2rem] text-center">
+              <div className="text-4xl font-black text-indigo-600 mb-2">%99.9</div>
+              <p className="text-gray-500 font-bold uppercase tracking-widest text-xs">Uptime Süresi</p>
+            </div>
+          </div>
+
           <div className="text-center mb-12">
             <h3 className="text-sm font-bold text-indigo-600 uppercase tracking-widest mb-4">Referanslarımız</h3>
             <h2 className="text-3xl font-bold text-gray-900">Bize Güvenen Markalar</h2>
@@ -534,6 +681,66 @@ const LandingPage = () => {
                 referrerPolicy="no-referrer"
               />
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ROI Calculator Section */}
+      <section className="py-24 bg-indigo-900 relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-1/2 h-full bg-indigo-800/20 skew-x-12 translate-x-1/2"></div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-white mb-4">Ne Kadar Tasarruf Edersiniz?</h2>
+            <p className="text-indigo-200">LookPrice ile operasyonel maliyetlerinizi düşürün.</p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className="bg-white/10 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/10">
+              <div className="space-y-8">
+                <div>
+                  <div className="flex justify-between text-white mb-4">
+                    <span className="font-medium">Günlük Ortalama Müşteri Sayısı</span>
+                    <span className="font-bold text-indigo-300">500+</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-indigo-400 w-3/4"></div>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex justify-between text-white mb-4">
+                    <span className="font-medium">Etiket Değiştirme Süresi (Aylık)</span>
+                    <span className="font-bold text-emerald-300">40 Saat</span>
+                  </div>
+                  <div className="h-2 bg-white/10 rounded-full overflow-hidden">
+                    <div className="h-full bg-emerald-400 w-1/2"></div>
+                  </div>
+                </div>
+                <div className="pt-6 border-t border-white/10">
+                  <p className="text-indigo-200 text-sm leading-relaxed">
+                    * Ortalama bir perakende mağazasında LookPrice kullanımı, personel verimliliğini %30 artırırken kağıt ve baskı maliyetlerini tamamen ortadan kaldırır.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-6">
+              <div className="bg-white p-8 rounded-[2.5rem] shadow-2xl">
+                <div className="flex items-center mb-6">
+                  <div className="bg-emerald-100 p-3 rounded-2xl mr-4">
+                    <TrendingUp className="h-6 w-6 text-emerald-600" />
+                  </div>
+                  <h4 className="text-xl font-bold text-gray-900">Yıllık Tahmini Kazanç</h4>
+                </div>
+                <div className="text-5xl font-black text-gray-900 mb-2">₺45.000+</div>
+                <p className="text-gray-500 text-sm">Operasyonel verimlilik ve kağıt tasarrufu ile.</p>
+                <button 
+                  onClick={() => setShowDemoModal(true)}
+                  className="w-full mt-8 py-4 bg-indigo-600 text-white rounded-2xl font-bold hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-200"
+                >
+                  Detaylı Rapor Alın
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       </section>
@@ -617,6 +824,26 @@ const LandingPage = () => {
           </div>
         </div>
       </footer>
+
+      {/* Live Activity Notification */}
+      <AnimatePresence>
+        {liveActivity && (
+          <motion.div
+            initial={{ opacity: 0, x: -100 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -100 }}
+            className="fixed bottom-8 left-8 z-[100] bg-white p-4 rounded-2xl shadow-2xl border border-gray-100 flex items-center space-x-4 max-w-xs"
+          >
+            <div className="bg-indigo-100 p-2 rounded-full">
+              <Zap className="h-5 w-5 text-indigo-600" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">{liveActivity.name}</p>
+              <p className="text-xs text-gray-500">{liveActivity.location}</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Demo Request Modal */}
       <AnimatePresence>
