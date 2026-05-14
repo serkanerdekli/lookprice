@@ -36,7 +36,8 @@ import {
   X,
   Cpu,
   Cpu as CpuIcon,
-  ShieldCheck
+  ShieldCheck,
+  History
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { translations } from "@/translations";
@@ -157,7 +158,28 @@ const SettingsTab = ({
 
   const [emails, setEmails] = React.useState<string[]>((branding.emails && branding.emails.length > 0) ? branding.emails : ['']);
   const [phones, setPhones] = React.useState<string[]>((branding.phones && branding.phones.length > 0) ? branding.phones : ['']);
-  const [activeSubTab, setActiveSubTab] = React.useState<string>(localStorage.getItem(`settingsSubTab_${currentStoreId || 'admin'}`) || 'web');
+  const [activeSubTab, setActiveSubTab] = useState<string>(localStorage.getItem(`settingsSubTab_${currentStoreId || 'admin'}`) || 'web');
+  const [logs, setLogs] = useState<any[]>([]);
+  const [loadingLogs, setLoadingLogs] = useState(false);
+
+  const fetchLogs = async () => {
+    setLoadingLogs(true);
+    try {
+      const res = await api.getAuditLogs(currentStoreId);
+      // Filter for integration logs if possible, or just show all
+      setLogs(res || []);
+    } catch (error) {
+      console.error("Logs fetch error:", error);
+    } finally {
+      setLoadingLogs(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeSubTab === 'logs') {
+      fetchLogs();
+    }
+  }, [activeSubTab]);
   
   const addEmail = () => setEmails([...emails, '']);
   const removeEmail = (index: number) => setEmails(emails.filter((_, i) => i !== index));
@@ -666,7 +688,99 @@ const SettingsTab = ({
             <Building2 className="h-4 w-4" />
             <span>E-Invoice</span>
           </button>
+          <button 
+            onClick={() => setActiveSubTab('logs')}
+            className={`flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center justify-center space-x-2 ${activeSubTab === 'logs' ? 'bg-slate-900 text-white shadow-lg shadow-slate-200' : 'text-slate-500 hover:bg-slate-100'}`}
+          >
+            <History className="h-4 w-4" />
+            <span>{lang === 'tr' ? 'Günlük' : 'Logs'}</span>
+          </button>
         </div>
+
+      {activeSubTab === 'logs' && (
+        <motion.div 
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="max-w-4xl mx-auto space-y-8"
+        >
+          <div className="bg-white p-6 md:p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-100/50">
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <div className="p-3 bg-slate-100 rounded-2xl">
+                  <History className="h-6 w-6 text-slate-600" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900">{lang === 'tr' ? 'İşlem ve Entegrasyon Günlüğü' : 'Integration & Audit Logs'}</h2>
+                  <p className="text-sm text-slate-500">{lang === 'tr' ? 'Son yapılan işlemler ve pazar yeri senkronizasyon detayları' : 'Recent activities and marketplace sync details'}</p>
+                </div>
+              </div>
+              <button 
+                onClick={fetchLogs}
+                disabled={loadingLogs}
+                className="p-2.5 bg-slate-50 text-slate-600 rounded-xl hover:bg-slate-100 transition-all disabled:opacity-50"
+              >
+                <RefreshCw className={`h-5 w-5 ${loadingLogs ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              {loadingLogs ? (
+                <div className="flex justify-center py-12">
+                  <RefreshCw className="h-8 w-8 text-slate-300 animate-spin" />
+                </div>
+              ) : logs.length === 0 ? (
+                <div className="text-center py-12 text-slate-400">
+                  {lang === 'tr' ? 'Kayıt bulunamadı.' : 'No logs found.'}
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="text-xs font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                        <th className="pb-4 pl-4">{lang === 'tr' ? 'Tarih' : 'Date'}</th>
+                        <th className="pb-4">{lang === 'tr' ? 'İşlem' : 'Action'}</th>
+                        <th className="pb-4 text-center">{lang === 'tr' ? 'Detay' : 'Details'}</th>
+                        <th className="pb-4 pr-4 text-right">{lang === 'tr' ? 'Veri' : 'Data'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-50">
+                      {logs.map((log: any) => (
+                        <tr key={log.id} className="text-sm hover:bg-slate-50/50 transition-colors">
+                          <td className="py-4 pl-4 whitespace-nowrap text-slate-500 font-mono text-xs">
+                            {new Date(log.created_at).toLocaleString(lang === 'tr' ? 'tr-TR' : 'en-US')}
+                          </td>
+                          <td className="py-4">
+                            <span className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                              log.action?.includes('error') ? 'bg-rose-50 text-rose-600' :
+                              log.action?.includes('warning') ? 'bg-amber-50 text-amber-600' :
+                              'bg-slate-100 text-slate-600'
+                            }`}>
+                              {log.action}
+                            </span>
+                          </td>
+                          <td className="py-4 text-slate-700 max-w-xs truncate" title={log.details}>
+                            {log.details}
+                          </td>
+                          <td className="py-4 pr-4 text-right">
+                            {log.metadata ? (
+                              <button 
+                                onClick={() => alert(JSON.stringify(log.metadata, null, 2))}
+                                className="text-xs text-blue-600 hover:underline font-bold"
+                              >
+                                {lang === 'tr' ? 'HAM VERİ' : 'RAW DATA'}
+                              </button>
+                            ) : '-'}
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+        </motion.div>
+      )}
 
       {activeSubTab === 'store-ops' && (
         <motion.div 
