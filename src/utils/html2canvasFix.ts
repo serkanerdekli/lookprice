@@ -444,36 +444,52 @@ export async function urlToDataUrl(url: string): Promise<string> {
 export async function prepareImagesForHtml2Canvas(element: HTMLElement): Promise<void> {
   if (!element) return;
   const imgs = Array.from(element.querySelectorAll('img'));
-  
-  await Promise.all(imgs.map(async (img) => {
-    const currentSrc = img.src || img.getAttribute('src');
-    if (!currentSrc) return;
+  const bgElements = Array.from(element.querySelectorAll<HTMLElement>('*')).filter(el => {
+    const bg = el.style.backgroundImage || window.getComputedStyle(el).backgroundImage;
+    return bg && bg !== 'none' && bg.includes('url(');
+  });
 
-    // If not a data URL, convert it
-    if (!currentSrc.startsWith('data:')) {
-      const dataUrl = await urlToDataUrl(currentSrc);
-      if (dataUrl && dataUrl.startsWith('data:')) {
-        img.src = dataUrl;
+  await Promise.all([
+    // Process <img> tags
+    ...imgs.map(async (img) => {
+      const currentSrc = img.src || img.getAttribute('src');
+      if (!currentSrc) return;
+      if (!currentSrc.startsWith('data:')) {
+        const dataUrl = await urlToDataUrl(currentSrc);
+        if (dataUrl && dataUrl.startsWith('data:')) {
+          img.src = dataUrl;
+        }
       }
-    }
-
-    // Wait for image to be complete and decoded
-    await new Promise<void>((resolve) => {
-      if (img.complete && img.naturalWidth > 0) {
-        resolve();
-        return;
+      await new Promise<void>((resolve) => {
+        if (img.complete && img.naturalWidth > 0) {
+          resolve();
+          return;
+        }
+        img.onload = () => resolve();
+        img.onerror = () => resolve();
+        setTimeout(resolve, 800);
+      });
+      if ('decode' in img && typeof img.decode === 'function') {
+        try {
+          await img.decode();
+        } catch (e) {}
       }
-      img.onload = () => resolve();
-      img.onerror = () => resolve();
-      setTimeout(resolve, 800); // 800ms safety timeout
-    });
-
-    if ('decode' in img && typeof img.decode === 'function') {
-      try {
-        await img.decode();
-      } catch (e) {}
-    }
-  }));
+    }),
+    // Process background-image elements
+    ...bgElements.map(async (el) => {
+      const bg = el.style.backgroundImage || window.getComputedStyle(el).backgroundImage;
+      const match = bg.match(/url\(['"]?(.*?)['"]?\)/);
+      if (match && match[1]) {
+        const currentSrc = match[1];
+        if (!currentSrc.startsWith('data:')) {
+          const dataUrl = await urlToDataUrl(currentSrc);
+          if (dataUrl && dataUrl.startsWith('data:')) {
+            el.style.setProperty('background-image', `url("${dataUrl}")`, 'important');
+          }
+        }
+      }
+    })
+  ]);
 }
 
 /**
